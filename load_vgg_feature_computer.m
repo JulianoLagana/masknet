@@ -7,6 +7,9 @@ function [ net ] = load_vgg_feature_computer( vgg_path )
     for i = 1 : 7
         net.layers(15) = [];
     end
+    
+    % Move net to gpu
+    net = vl_simplenn_move(net, 'gpu');
  
 end
 
