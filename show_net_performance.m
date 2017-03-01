@@ -42,6 +42,8 @@ function [ output_args ] = show_net_performance( net )
         % Wait for user visualization
         waitforbuttonpress;
         
+    end
+        
 
 end
 
