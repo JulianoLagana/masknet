@@ -292,6 +292,13 @@ for t=1:params.batchSize:numel(subset)
   fprintf('%s: epoch %02d: %3d/%3d:', mode, params.epoch, ...
           fix((t-1)/params.batchSize)+1, ceil(numel(subset)/params.batchSize)) ;
   batchSize = min(params.batchSize, numel(subset) - t + 1) ;
+  
+  % Skip batches of different sizes (so that the net can have a static
+  % bilinear transform grid)
+  if batchSize ~= params.batchSize
+      disp('skipping last batch (epoch size is not divisible by batch size)');
+      continue;
+  end
 
   for s=1:params.numSubBatches
     % get this image batch and prefetch the next

@@ -35,8 +35,8 @@ end
 % matfile object accesses data, they cannot be randomly sampled)
 temp = whos(imdb);
 nImages = temp(1).size(4);
-training_ratio = 1;
-validation_ratio = 0.0;
+training_ratio = 0.7;
+validation_ratio = 0.2;
 set = zeros(nImages,1);
 for i = 1 : nImages
     
