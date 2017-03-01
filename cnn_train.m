@@ -18,7 +18,7 @@ function [net, stats] = cnn_train(net, imdb, getBatch, varargin)
 % the terms of the BSD license (see the COPYING file).
 
 opts.expDir = fullfile('data','exp') ;
-opts.continue = false ;
+opts.continue = true ;
 opts.batchSize = 256 ;
 opts.numSubBatches = 1 ;
 opts.train = [] ;
@@ -41,7 +41,7 @@ opts.conserveMemory = true ;
 opts.backPropDepth = +inf ;
 opts.sync = false ;
 opts.cudnn = true ;
-opts.errorFunction = 'none' ;
+opts.errorFunction = 'mask' ;
 opts.errorLabels = {} ;
 opts.plotDiagnostics = false ;
 opts.plotStatistics = true;
@@ -87,6 +87,9 @@ if isstr(opts.errorFunction)
     case 'binary'
       opts.errorFunction = @error_binary ;
       if isempty(opts.errorLabels), opts.errorLabels = {'binerr'} ; end
+    case 'mask'
+      opts.errorFunction = @error_mask ;
+      if isempty(opts.errorLabels), opts.errorLabels = {'maskerror'} ; end
     otherwise
       error('Unknown error function ''%s''.', opts.errorFunction) ;
   end
@@ -215,6 +218,14 @@ function err = error_binary(params, labels, res)
 predictions = gather(res(end-1).x) ;
 error = bsxfun(@times, predictions, labels) < 0 ;
 err = sum(error(:)) ;
+
+% -------------------------------------------------------------------------
+function err = error_mask(params, labels, res)
+% -------------------------------------------------------------------------
+predictions = double(gather(res(end-1).x) > 0);
+predictions(predictions == 0) = -1;
+err = 1 - sum(predictions(:) == labels(:))/size(predictions(:),1);
+err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
 
 % -------------------------------------------------------------------------
 function err = error_none(params, labels, res)
