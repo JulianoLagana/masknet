@@ -593,11 +593,3 @@ if get(0,'CurrentFigure') ~= n
   end
 end
 
-% -------------------------------------------------------------------------
-function clearMex()
-% -------------------------------------------------------------------------
-%clear vl_tmove vl_imreadjpeg ;
-disp('Clearing mex files') ;
-clear mex ;
-clear vl_tmove vl_imreadjpeg ;
-
