@@ -1,10 +1,8 @@
-function [ net ] = masknet_init(  )
+function [ net ] = masknet_init( batchSize )
 
     % Meta parameters
     net.meta.inputSize = [14 14 512] ;
-    net.meta.trainOpts.learningRate = 0.00005 ;
-    net.meta.trainOpts.numEpochs = 200 ;
-    net.meta.trainOpts.batchSize = 200 ;  
+    net.meta.trainOpts = [];
 
     f = 1/100;
     net.layers = {};
@@ -34,7 +32,7 @@ function [ net ] = masknet_init(  )
                            
     % Bilinear upsampling layer
     outDim = [250,250];
-    grid = single(create_meshgrid(outDim, net.meta.trainOpts.batchSize));
+    grid = single(create_meshgrid(outDim, batchSize));
     grid = gpuArray(grid);
     net.layers{end+1} = struct('type','bilinear',...
                                'grid',grid);     
