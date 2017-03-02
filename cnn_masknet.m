@@ -11,10 +11,11 @@ opts.train.gpus = 1;
 
 % Training parameters
 opts.train.numEpochs = 3 ;
-opts.train.learningRate = 0.00001 ;
-opts.train.weightDecay = 0.005 ;
+opts.train.learningRate = 0.00001/5 ;
+opts.train.weightDecay = 0.00005 ;
 opts.train.momentum = 0.9 ;
-opts.train.batchSize = 200 ;
+opts.train.batchSize = 50 ;
+opts.train.continue = false;
 
 % Override any options with the user-defined values
 opts = vl_argparse(opts, varargin) ;
