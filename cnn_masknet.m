@@ -36,7 +36,7 @@ end
 temp = whos(imdb);
 nImages = temp(1).size(4);
 training_ratio = 0.7;
-validation_ratio = 0.2;
+validation_ratio = 0.15;
 set = zeros(nImages,1);
 for i = 1 : nImages
     
