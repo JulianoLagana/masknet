@@ -1,4 +1,4 @@
-function [ output_args ] = show_net_performance( net )
+function [  ] = show_net_performance( net )
 
     % Remove the loss layer from the net
     net.layers(end) = [];
@@ -16,7 +16,7 @@ function [ output_args ] = show_net_performance( net )
     % Initializa fullscreen figure
     figure('units','normalized','outerposition',[0 0 1 1]);
     
-    for i = 1 : nImages
+    for i = round(nImages*0.9)+1 : nImages
         
         % Load the image and the mask
         im = file.imdb(:,:,:,i);   
@@ -29,15 +29,19 @@ function [ output_args ] = show_net_performance( net )
         % Process the feature map using the provided network
         res = vl_simplenn(net,fm);
         
-        % Plot the original image alongside the output and the ground truth
-        subplot(1,3,1);
-        image(im);
-        subplot(1,3,2);
+        % Plot the output overlaid on the orignal image
+        im = gather(im);
+        subplot(1,2,1);
         out = res(end).x;
         out = out(:,:,:,1);
-        imagesc(out,[-0.2 0.2]);
-        subplot(1,3,3);
-        imagesc(mask);
+        out = gather(out);
+        image(imfuse(im,out>0,'blend','Scaling','joint'));
+        axis image;
+        
+        % Plot the ground truth overlaid on the original image
+        subplot(1,2,2);
+        image(imfuse(im,mask,'blend','Scaling','joint'));
+        axis image;
         
         % Wait for user visualization
         waitforbuttonpress;
