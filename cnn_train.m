@@ -280,9 +280,6 @@ if params.profile
   end
 end
 
-% Load feature computer
-vgg = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
-
 subset = params.(mode) ;
 num = 0 ;
 stats.num = 0 ; % return something even if subset = []
@@ -329,10 +326,10 @@ for t=1:params.batchSize:numel(subset)
       im = gpuArray(im) ;
     end
     
-    % First process the image with the VGG feature computer
-    im = compute_vgg_feature_map(vgg,im);
+    % Resize image to fit VGG16 (eventually change dataset instead)
+    im = imresize(im,[224 224]);
     
-    % Change the mask to conform to vl_nnloss
+    % Change the mask to conform to vl_nnloss (eventually change dataset instead)
     labels(labels==0) = -1;
     
     % And then input the image to the network

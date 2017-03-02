@@ -1,12 +1,11 @@
 function [ net ] = masknet_init( batchSize )
 
-    % Meta parameters
-    net.meta.inputSize = [14 14 512] ;
-    net.meta.trainOpts = [];
-
-    f = 1/100;
-    net.layers = {};
+    % The first part is just a VGG network, with all the layers after the
+    % 14th removed
+    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net.meta = [];
     
+    f = 1/100;
     % Conv + ReLU layers
     net.layers{end+1} = struct('type', 'conv',...
                                'weights', {{f*randn(1,1,512,512, 'single'), zeros(1, 512, 'single')}} , ...
@@ -42,6 +41,10 @@ function [ net ] = masknet_init( batchSize )
                         
     % Tidy the net
     net = vl_simplenn_tidy(net);
+    
+    % Meta parameters
+    net.meta.inputSize = [224 224 3 batchSize] ;
+    net.meta.trainOpts = [];
 
 end
 
