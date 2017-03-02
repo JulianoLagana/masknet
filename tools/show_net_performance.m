@@ -7,10 +7,10 @@ function [  ] = show_net_performance( net )
     net = vl_simplenn_move(net, 'gpu') ;
     
     % Load VGG
-    vgg = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    vgg = load_vgg_feature_computer('../data/imagenet-vgg-m.mat');
     
     % Open imdb file
-    file = matfile('data/imdb.mat');
+    file = matfile('../data/imdb.mat');
     nImages = getfield(whos(file),'size');  nImages = nImages(4);
     
     % Initializa fullscreen figure
