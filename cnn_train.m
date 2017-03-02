@@ -18,7 +18,7 @@ function [net, stats] = cnn_train(net, imdb, getBatch, varargin)
 % the terms of the BSD license (see the COPYING file).
 
 opts.expDir = fullfile('data','exp') ;
-opts.continue = true ;
+opts.continue = false ;
 opts.batchSize = 256 ;
 opts.numSubBatches = 1 ;
 opts.train = [] ;
@@ -27,8 +27,8 @@ opts.gpus = [] ;
 opts.prefetch = false ;
 opts.numEpochs = 300 ;
 opts.learningRate = 0.001 ;
-opts.weightDecay = 0*0.0005 ;
-opts.momentum = 0*0.9 ;
+opts.weightDecay = 0.005 ;
+opts.momentum = 0.9 ;
 opts.saveMomentum = true ;
 opts.nesterovUpdate = false ;
 opts.randomSeed = 0 ;
@@ -48,8 +48,12 @@ opts.plotStatistics = true;
 opts = vl_argparse(opts, varargin) ;
 
 if ~exist(opts.expDir, 'dir'), mkdir(opts.expDir) ; end
-if isempty(opts.train), opts.train = find(imdb.images.set==1) ; end
-if isempty(opts.val), opts.val = find(imdb.images.set==2) ; end
+if isempty(opts.train)
+    error('Please provide the indexes for the training set'); 
+end
+if isempty(opts.val)
+    error('Please provide the indexes for the validation set'); 
+end
 if isnan(opts.train), opts.train = [] ; end
 if isnan(opts.val), opts.val = [] ; end
 
@@ -103,7 +107,7 @@ stats = [] ;
 % -------------------------------------------------------------------------
 
 modelPath = @(ep) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', ep));
-modelFigPath = fullfile(opts.expDir, 'net-train.pdf') ;
+modelFigPath = fullfile(opts.expDir, 'net-train.jpg') ;
 
 start = opts.continue * findLastCheckpoint(opts.expDir) ;
 if start >= 1
@@ -180,7 +184,7 @@ for epoch=start+1:opts.numEpochs
       grid on ;
     end
     drawnow ;
-    print(1, modelFigPath, '-dpdf') ;
+    print(1, modelFigPath, '-djpeg') ;
   end
 end
 
