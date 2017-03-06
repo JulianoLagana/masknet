@@ -326,9 +326,6 @@ for t=1:params.batchSize:numel(subset)
       im = gpuArray(im) ;
     end
     
-    % Resize image to fit VGG16 (eventually change dataset instead)
-    im = imresize(im,[224 224]);
-    
     % Change the mask to conform to vl_nnloss (eventually change dataset instead)
     labels(labels==0) = -1;
     
