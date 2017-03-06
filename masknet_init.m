@@ -30,7 +30,7 @@ function [ net ] = masknet_init( batchSize )
                                'newDim', [56,56,1]);
                            
     % Bilinear upsampling layer
-    outDim = [250,250];
+    outDim = [224,224];
     grid = single(create_meshgrid(outDim, batchSize));
     grid = gpuArray(grid);
     net.layers{end+1} = struct('type','bilinear',...
