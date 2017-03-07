@@ -1,4 +1,4 @@
-function [  ] = show_net_performance( net , imdb)
+function [  ] = show_net_performance( net , imdb, start)
 
     % Remove the loss layer from the net
     net.layers(end) = [];
@@ -13,7 +13,7 @@ function [  ] = show_net_performance( net , imdb)
     % Initializa fullscreen figure
     figure('units','normalized','outerposition',[0 0 1 1]);
     
-    for i = round(nImages*0.9)+1 : nImages
+    for i = round(nImages*start)+1 : nImages
         
         % Load the image and the mask
         imo = file.imdb(:,:,:,i);
