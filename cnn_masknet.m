@@ -9,12 +9,15 @@ opts.imdbPath = fullfile(opts.dataDir, 'imdb.mat');
 opts.train = struct() ;
 opts.train.gpus = 1;
 
-% Training parameters
+% Default network parameters
+opts.net.batchSize = 50 ;
+opts.net.dropoutRate = 0.4;
+
+% Default training parameters
 opts.train.numEpochs = 3 ;
 opts.train.learningRate = 0.00001/5 ;
 opts.train.weightDecay = 0.00005 ;
 opts.train.momentum = 0.9 ;
-opts.train.batchSize = 50 ;
 opts.train.continue = false;
 
 % Override any options with the user-defined values
@@ -28,7 +31,7 @@ disp(gpuDevice(opts.train.gpus)) ;
 
 % Load the network (or read from arguments)
 if isempty(opts.network)
-  net = masknet_init(opts.train.batchSize) ;
+  net = masknet_init(opts.net) ;
 else
   net = opts.network ;
   opts.network = [] ;
@@ -69,6 +72,7 @@ end
 [net, info] = cnn_train(net, imdb, @(x,y)getBatch(x,y), ...
   'expDir', opts.expDir, ...
   opts.train, ...
+  'batchSize', opts.net.batchSize, ...
   'train', find(set == 1), ...
   'val', find(set == 2)) ;
 

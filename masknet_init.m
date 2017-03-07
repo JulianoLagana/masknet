@@ -1,4 +1,12 @@
-function [ net ] = masknet_init( batchSize )
+function [ net ] = masknet_init( varargin )
+
+    % Default initalizations
+    opts.batchSize = 50;
+    opts.dropoutRate = 0.7;
+    opts.maskSize = [224 224];
+    
+    % Override default with user-specified values
+    opts = vl_argparse(opts, varargin) ;
 
     % The first part is just a VGG network, with all the layers after the
     % 14th removed
@@ -30,8 +38,7 @@ function [ net ] = masknet_init( batchSize )
                                'newDim', [56,56,1]);
                            
     % Bilinear upsampling layer
-    outDim = [224,224];
-    grid = single(create_meshgrid(outDim, batchSize));
+    grid = single(create_meshgrid(opts.maskSize, opts.batchSize));
     grid = gpuArray(grid);
     net.layers{end+1} = struct('type','bilinear',...
                                'grid',grid);     
@@ -43,7 +50,7 @@ function [ net ] = masknet_init( batchSize )
     net = vl_simplenn_tidy(net);
     
     % Meta parameters
-    net.meta.inputSize = [224 224 3 batchSize] ;
+    net.meta.inputSize = [opts.maskSize(1) opts.maskSize(2) 3 opts.batchSize] ;
     net.meta.trainOpts = [];
 
 end
