@@ -4,3 +4,4 @@
 *.jpg
 *.jpeg
 tools/run_experiments.m
+data/*
