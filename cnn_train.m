@@ -41,7 +41,7 @@ opts.conserveMemory = true ;
 opts.backPropDepth = +inf ;
 opts.sync = false ;
 opts.cudnn = true ;
-opts.errorFunction = 'mask' ;
+opts.errorFunction = 'IoU' ;
 opts.errorLabels = {} ;
 opts.plotDiagnostics = false ;
 opts.plotStatistics = true;
@@ -94,6 +94,9 @@ if isstr(opts.errorFunction)
     case 'mask'
       opts.errorFunction = @error_mask ;
       if isempty(opts.errorLabels), opts.errorLabels = {'maskerror'} ; end
+    case 'IoU'
+      opts.errorFunction = @error_IoU;
+      if isempty(opts.errorLabels), opts.errorLabels = {'IoUerror'} ; end
     otherwise
       error('Unknown error function ''%s''.', opts.errorFunction) ;
   end
@@ -230,6 +233,17 @@ predictions = double(gather(res(end-1).x) > 0);
 predictions(predictions == 0) = -1;
 err = 1 - sum(predictions(:) == labels(:))/size(predictions(:),1);
 err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
+
+% -------------------------------------------------------------------------
+function err = error_IoU(params, labels, res)
+% -------------------------------------------------------------------------
+predictions = double(gather(res(end-1).x) > 0);
+labels(labels == -1) = 0;
+U = labels | predictions; 
+I = labels & predictions;
+err = 1-sum(I(:))/sum(U(:));
+err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
+
 
 % -------------------------------------------------------------------------
 function err = error_none(params, labels, res)
