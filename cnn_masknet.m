@@ -12,6 +12,7 @@ opts.train.gpus = 1;
 % Default network parameters
 opts.net.batchSize = 50 ;
 opts.net.dropoutRate = 0.4;
+opts.net.batchNormalization = 0;
 
 % Default training parameters
 opts.train.numEpochs = 3 ;
