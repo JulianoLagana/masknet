@@ -2,7 +2,6 @@ function [net, info] = cnn_masknet(varargin)
 %CNN_MASKNET  Trains the masknet.
 
 % Initializations
-opts.network = [] ;
 opts.expDir = fullfile(pwd, 'data', 'exp') ;
 opts.dataDir =  fullfile(pwd, 'data');
 opts.imdbPath = fullfile(opts.dataDir, 'imdb.mat');
@@ -10,9 +9,9 @@ opts.train = struct() ;
 opts.train.gpus = 1;
 
 % Default network parameters
+opts.arch = 'deepmask';
 opts.net.batchSize = 50 ;
 opts.net.dropoutRate = 0.4;
-opts.net.batchNormalization = 0;
 
 % Default training parameters
 opts.train.numEpochs = 3 ;
@@ -30,12 +29,17 @@ clear mex ;
 clear vl_tmove vl_imreadjpeg ;
 disp(gpuDevice(opts.train.gpus)) ;
 
-% Load the network (or read from arguments)
-if isempty(opts.network)
-  net = masknet_init(opts.net) ;
-else
-  net = opts.network ;
-  opts.network = [] ;
+% Load the chosen network architecture
+addpath archs;
+switch opts.arch
+    case 'deepmask'
+        net = deepmask_init(opts.net);
+    case 'deepmask_dropoutBefore'
+        net = deepmask_dropoutBefore_init(opts.net);
+    case 'deepmask_dropoutAfter'
+        net = deepmask_dropoutAfter_init(opts.net);
+    case 'deepmask_bNorm'
+        net = deepmask_bNorm_init(opts.net);
 end
 
 % Load the imdb file
