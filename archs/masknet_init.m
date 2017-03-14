@@ -43,14 +43,36 @@ function [ net ] = masknet_init( varargin )
     
     % Bilinear upsampling layer
     bilinearBlock = dagnn.BilinearSampler();
-    net.addLayer('bilinear', bilinearBlock, {'x19', 'grid'}, {'x20'});
+    net.addLayer('bilinear', bilinearBlock, {'x19', 'grid'}, {'prediction'});
     
     % Logistic log-loss layer
     logLossBlock = dagnn.Loss('loss','logistic');
-    net.addLayer('logloss', logLossBlock,{'x20','gtMask'},{'objective'});
+    net.addLayer('logloss', logLossBlock,{'prediction','gtMask'},{'objective'});
     
-    % Initialize parameters
-    net.initParams();
+    % IoU error layer
+    IoUblock = dagnn.Loss('loss','iouerror');
+    net.addLayer('IoUerr', IoUblock, {'prediction','gtMask'},{'IoUerr'});
+    
+    % Initialize all parameters (except for the VGG ones)
+    l1 = net.getLayerIndex('conv6');
+    l2 = net.getLayerIndex('IoUerr');
+    net.initParams(l1:l2);
+    
+    f = 1/100;
+    iConv6f = net.getParamIndex('conv6f');
+    sz = size(net.params(iConv6f).value);
+    net.params(iConv6f).value = f*randn(sz,'single');
+    
+    iConv7f = net.getParamIndex('conv7f');
+    sz = size(net.params(iConv7f).value);
+    net.params(iConv7f).value = f*randn(sz,'single');
+    
+    iConv8f = net.getParamIndex('conv8f');
+    sz = size(net.params(iConv8f).value);
+    net.params(iConv8f).value = f*randn(sz,'single');
+    
+    
+    
     
     
     % Meta parameters
