@@ -51,30 +51,6 @@ if ~evaluateMode
   end
 end
 
-% setup error calculation function
-hasError = true ;
-if isstr(opts.errorFunction)
-  switch opts.errorFunction
-    case 'none'
-      opts.errorFunction = @error_none ;
-      hasError = false ;
-    case 'multiclass'
-      opts.errorFunction = @error_multiclass ;
-      if isempty(opts.errorLabels), opts.errorLabels = {'top1err', 'top5err'} ; end
-    case 'binary'
-      opts.errorFunction = @error_binary ;
-      if isempty(opts.errorLabels), opts.errorLabels = {'binerr'} ; end
-    case 'mask'
-      opts.errorFunction = @error_mask ;
-      if isempty(opts.errorLabels), opts.errorLabels = {'maskerror'} ; end
-    case 'IoU'
-      opts.errorFunction = @error_IoU;
-      if isempty(opts.errorLabels), opts.errorLabels = {'IoUerror'} ; end
-    otherwise
-      error('Unknown error function ''%s''.', opts.errorFunction) ;
-  end
-end
-
 % -------------------------------------------------------------------------
 %                                                        Train and validate
 % -------------------------------------------------------------------------
@@ -164,62 +140,6 @@ end
 
 % With multiple GPUs, return one copy
 if isa(net, 'Composite'), net = net{1} ; end
-
-% -------------------------------------------------------------------------
-function err = error_multiclass(params, labels, res)
-% -------------------------------------------------------------------------
-predictions = gather(res(end-1).x) ;
-[~,predictions] = sort(predictions, 3, 'descend') ;
-
-% be resilient to badly formatted labels
-if numel(labels) == size(predictions, 4)
-  labels = reshape(labels,1,1,1,[]) ;
-end
-
-% skip null labels
-mass = single(labels(:,:,1,:) > 0) ;
-if size(labels,3) == 2
-  % if there is a second channel in labels, used it as weights
-  mass = mass .* labels(:,:,2,:) ;
-  labels(:,:,2,:) = [] ;
-end
-
-m = min(5, size(predictions,3)) ;
-
-error = ~bsxfun(@eq, predictions, labels) ;
-err(1,1) = sum(sum(sum(mass .* error(:,:,1,:)))) ;
-err(2,1) = sum(sum(sum(mass .* min(error(:,:,1:m,:),[],3)))) ;
-
-% -------------------------------------------------------------------------
-function err = error_binary(params, labels, res)
-% -------------------------------------------------------------------------
-predictions = gather(res(end-1).x) ;
-error = bsxfun(@times, predictions, labels) < 0 ;
-err = sum(error(:)) ;
-
-% -------------------------------------------------------------------------
-function err = error_mask(params, labels, res)
-% -------------------------------------------------------------------------
-predictions = double(gather(res(end-1).x) > 0);
-predictions(predictions == 0) = -1;
-err = 1 - sum(predictions(:) == labels(:))/size(predictions(:),1);
-err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
-
-% -------------------------------------------------------------------------
-function err = error_IoU(params, labels, res)
-% -------------------------------------------------------------------------
-predictions = double(gather(res(end-1).x) > 0);
-labels(labels == -1) = 0;
-U = labels | predictions; 
-I = labels & predictions;
-err = 1-sum(I(:))/sum(U(:));
-err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
-
-
-% -------------------------------------------------------------------------
-function err = error_none(params, labels, res)
-% -------------------------------------------------------------------------
-err = zeros(0,1) ;
 
 
 % -------------------------------------------------------------------------
