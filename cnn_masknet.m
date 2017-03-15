@@ -35,15 +35,22 @@ function [net, info] = cnn_masknet(varargin)
     switch opts.arch
         case 'deepmask'
             net = deepmask_init(opts.net);
+            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_dropoutBefore'
             net = deepmask_dropoutBefore_init(opts.net);
+            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_dropoutAfter'
             net = deepmask_dropoutAfter_init(opts.net);
+            batchFn = @(x,y)getBatchDeepmask(opts.trainx,y);
         case 'deepmask_bNorm'
             net = deepmask_bNorm_init(opts.net);
-        case 'masknet'
-            net = masknet_init(opts.net);
+            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
+        case 'deepmask_dag'
+            net = deepmask_dag_init(opts.net);
+            batchFn = @(x,y) getBatchDeepmaskDag(opts.train,x,y);
             isDag = true;
+        otherwise
+            error('Architecture not recognized.');
     end
 
     % Load the imdb file
@@ -77,13 +84,6 @@ function [net, info] = cnn_masknet(varargin)
 
     end
 
-    % Choose batch function
-    if strcmp(opts.arch,'masknet')
-        batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-    else
-        batchFn = @(x,y)getBatch(x,y);
-    end
-
     % Train
     if isDag
         [net, info] = cnn_train_dag(net, imdb, batchFn, ...
@@ -105,14 +105,20 @@ end
 
 
 % --------------------------------------------------------------------
-function [images, masks] = getBatch(imdb, batch)
+function [images, masks] = getBatchDeepmask(opts, imdb, batch)
 % --------------------------------------------------------------------
     images = single(imdb.imdb(:,:,:,batch));
     masks = single(imdb.masks(:,:,1,batch));
+    masks(masks == 0) = -1;    
+    
+    if numel(opts.gpus) > 0
+        images = gpuArray(images);
+        masks = gpuArray(masks);
+    end
 end
 
 % --------------------------------------------------------------------
-function inputs = getBatchMasknet(opts,imdb, batch)
+function inputs = getBatchDeepmaskDag(opts, imdb, batch)
 % --------------------------------------------------------------------
     images = single(imdb.imdb(:,:,:,batch));
     

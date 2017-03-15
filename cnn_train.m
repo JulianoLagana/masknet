@@ -237,12 +237,12 @@ err = err * size(predictions,4); % because cnn_train later multiplies this by th
 % -------------------------------------------------------------------------
 function err = error_IoU(params, labels, res)
 % -------------------------------------------------------------------------
-predictions = double(gather(res(end-1).x) > 0);
+predictions = res(end-1).x > 0;
 labels(labels == -1) = 0;
 U = labels | predictions; 
 I = labels & predictions;
 err = 1-sum(I(:))/sum(U(:));
-err = err * size(predictions,4); % because cnn_train later multiplies this by the batch size
+err = double(gather(err * size(predictions,4))); % because cnn_train later multiplies this by the batch size
 
 
 % -------------------------------------------------------------------------
@@ -335,13 +335,6 @@ for t=1:params.batchSize:numel(subset)
       nextBatch = subset(batchStart : params.numSubBatches * numlabs : batchEnd) ;
       params.getBatch(params.imdb, nextBatch) ;
     end
-
-    if numGpus >= 1
-      im = gpuArray(im) ;
-    end
-    
-    % Change the mask to conform to vl_nnloss (eventually change dataset instead)
-    labels(labels==0) = -1;
     
     % And then input the image to the network
     if strcmp(mode, 'train')
