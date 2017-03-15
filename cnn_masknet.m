@@ -49,6 +49,10 @@ function [net, info] = cnn_masknet(varargin)
             net = deepmask_dag_init(opts.net);
             batchFn = @(x,y) getBatchDeepmaskDag(opts.train,x,y);
             isDag = true;
+        case 'masknet'
+            net = masknet_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
         otherwise
             error('Architecture not recognized.');
     end
@@ -122,6 +126,22 @@ function inputs = getBatchDeepmaskDag(opts, imdb, batch)
 % --------------------------------------------------------------------
     images = single(imdb.imdb(:,:,:,batch));
     
+    masks = single(imdb.masks(:,:,1,batch));
+    masks(masks == 0) = -1;
+    
+    if numel(opts.gpus) > 0
+        images = gpuArray(images);   
+        masks = gpuArray(masks);  
+    end
+    
+    inputs = {'input',images,'gtMask',masks};
+end
+
+% --------------------------------------------------------------------
+function inputs = getBatchMasknet(opts, imdb, batch)
+% --------------------------------------------------------------------
+    images = single(imdb.imdb(:,:,:,batch));
+    
     partial_masks = single(imdb.partial_masks(:,:,1,batch));
     partial_masks(partial_masks == 0) = -1;
     
@@ -134,5 +154,5 @@ function inputs = getBatchDeepmaskDag(opts, imdb, batch)
         masks = gpuArray(masks);  
     end
     
-    inputs = {'input',images,'gtMask',masks};
+    inputs = {'input',images,'pmask',partial_masks,'gtMask',masks};
 end
