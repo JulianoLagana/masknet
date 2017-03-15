@@ -56,7 +56,7 @@ end
 % -------------------------------------------------------------------------
 
 modelPath = @(ep) fullfile(opts.expDir, sprintf('net-epoch-%d.mat', ep));
-modelFigPath = fullfile(opts.expDir, 'net-train.pdf') ;
+modelFigPath = fullfile(opts.expDir, 'net-train.jpg') ;
 
 start = opts.continue * findLastCheckpoint(opts.expDir) ;
 if start >= 1
@@ -134,7 +134,7 @@ for epoch=start+1:opts.numEpochs
       grid on ;
     end
     drawnow ;
-    print(1, modelFigPath, '-dpdf') ;
+    print(1, modelFigPath, '-djpeg') ;
   end
 end
 
