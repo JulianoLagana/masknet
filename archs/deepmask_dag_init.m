@@ -1,4 +1,4 @@
-function [ net ] = masknet_init( varargin )
+function [ net ] = deepmask_dag_init( varargin )
 
     % Default initalizations
     opts.batchSize = 50;
