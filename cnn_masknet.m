@@ -12,6 +12,10 @@ function [net, info] = cnn_masknet(varargin)
     opts.arch = 'deepmask';
     opts.net.batchSize = 50 ;
     opts.net.dropoutRate = 0.4;
+    
+    % Specific to masknet3
+    opts.net.nFeatures = 50;
+    opts.net.mSize = 100;
 
     % Default training parameters
     opts.train.numEpochs = 3 ;
@@ -51,6 +55,14 @@ function [net, info] = cnn_masknet(varargin)
             isDag = true;
         case 'masknet'
             net = masknet_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
+        case 'masknet2'
+            net = masknet2_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
+        case 'masknet3'
+            net = masknet3_init(opts.net);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         otherwise
