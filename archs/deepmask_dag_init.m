@@ -7,7 +7,7 @@ function [ net ] = deepmask_dag_init( varargin )
     opts.batchNormalization = 0;
     
     % Override default with user-specified values
-    opts = vl_argparse(opts, varargin) ;
+    [opts,~] = vl_argparse(opts, varargin) ;
 
     
     % The first part is pre-initialized VGG network, with all the layers after the
