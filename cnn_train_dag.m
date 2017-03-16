@@ -27,6 +27,7 @@ opts.randomSeed = 0 ;
 opts.profile = false ;
 opts.parameterServer.method = 'mmap' ;
 opts.parameterServer.prefix = 'mcn' ;
+opts.saveInterval = 40;
 
 opts.derOutputs = {'objective', 1} ;
 opts.extractStatsFn = @extractStats ;
@@ -87,7 +88,7 @@ for epoch=start+1:opts.numEpochs
   if numel(opts.gpus) <= 1
     [net, state] = processEpoch(net, state, params, 'train') ;
     [net, state] = processEpoch(net, state, params, 'val') ;
-    if ~evaluateMode
+    if ~evaluateMode && mod(epoch,opts.saveInterval)==0
       saveState(modelPath(epoch), net, state) ;
     end
     lastStats = state.stats ;
@@ -95,7 +96,7 @@ for epoch=start+1:opts.numEpochs
     spmd
       [net, state] = processEpoch(net, state, params, 'train') ;
       [net, state] = processEpoch(net, state, params, 'val') ;
-      if labindex == 1 && ~evaluateMode
+      if labindex == 1 && ~evaluateMode && mod(epoch,opts.saveInterval)==0
         saveState(modelPath(epoch), net, state) ;
       end
       lastStats = state.stats ;
@@ -106,7 +107,10 @@ for epoch=start+1:opts.numEpochs
   stats.train(epoch) = lastStats.train ;
   stats.val(epoch) = lastStats.val ;
   clear lastStats ;
-  saveStats(modelPath(epoch), stats) ;
+  
+  if mod(epoch,opts.saveInterval)==0
+    saveStats(modelPath(epoch), stats) ;
+  end
 
   if opts.plotStatistics
     switchFigure(1) ; clf ;
