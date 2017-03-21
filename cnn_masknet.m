@@ -31,56 +31,9 @@ function [net, info] = cnn_masknet(varargin)
     gpuDevice(opts.train.gpus) ;
 
     % Load the chosen network architecture
-    isDag = false;
     addpath archs;
-    switch opts.arch
-        case 'deepmask'
-            net = deepmask_init(opts.net, opts.train);
-            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
-        case 'deepmask_dropoutBefore'
-            net = deepmask_dropoutBefore_init(opts.net, opts.train);
-            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
-        case 'deepmask_dropoutAfter'
-            net = deepmask_dropoutAfter_init(opts.net, opts.train);
-            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
-        case 'deepmask_bNorm'
-            net = deepmask_bNorm_init(opts.net, opts.train);
-            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
-        case 'deepmask_dag'
-            net = deepmask_dag_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchDeepmaskDag(opts.train,x,y);
-            isDag = true;
-        case 'masknet'
-            net = masknet_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        case 'masknet2'
-            net = masknet2_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        case 'masknet3'
-            net = masknet3_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        case 'masknet_RGB'
-            net = masknet_RGB_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;    
-        case 'masknet_RGB2'
-            net = masknet_RGB2_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        case 'masknet_RGB3'
-            net = masknet_RGB3_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        case 'masknet_BW'
-            net = masknet_BW_init(opts.net, opts.train);
-            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
-            isDag = true;
-        otherwise
-            error('Architecture not recognized.');
-    end
+    initFn = str2func([opts.arch '_init']);
+    [net, batchFn] = initFn(opts.net, opts.train);
 
     % Load the imdb file
     if exist(opts.imdbPath, 'file')
@@ -114,7 +67,7 @@ function [net, info] = cnn_masknet(varargin)
     end
 
     % Train
-    if isDag
+    if isa(net,'dagnn.DagNN')
         [net, info] = cnn_train_dag(net, imdb, batchFn, ...
           'expDir', opts.expDir, ...
           opts.train, ...
@@ -128,54 +81,4 @@ function [net, info] = cnn_masknet(varargin)
           'val', find(set == 2)) ;    
     end
 
-end
-
-
-% --------------------------------------------------------------------
-function [images, masks] = getBatchDeepmask(opts, imdb, batch)
-% --------------------------------------------------------------------
-    images = single(imdb.imdb(:,:,:,batch));
-    masks = single(imdb.masks(:,:,1,batch));
-    masks(masks == 0) = -1;    
-    
-    if numel(opts.gpus) > 0
-        images = gpuArray(images);
-        masks = gpuArray(masks);
-    end
-end
-
-% --------------------------------------------------------------------
-function inputs = getBatchDeepmaskDag(opts, imdb, batch)
-% --------------------------------------------------------------------
-    images = single(imdb.imdb(:,:,:,batch));
-    
-    masks = single(imdb.masks(:,:,1,batch));
-    masks(masks == 0) = -1;
-    
-    if numel(opts.gpus) > 0
-        images = gpuArray(images);   
-        masks = gpuArray(masks);  
-    end
-    
-    inputs = {'input',images,'gtMask',masks};
-end
-
-% --------------------------------------------------------------------
-function inputs = getBatchMasknet(opts, imdb, batch)
-% --------------------------------------------------------------------
-    images = single(imdb.imdb(:,:,:,batch));
-    
-    partial_masks = single(imdb.partial_masks(:,:,1,batch));
-    partial_masks(partial_masks == 0) = -1;
-    
-    masks = single(imdb.masks(:,:,1,batch));
-    masks(masks == 0) = -1;
-    
-    if numel(opts.gpus) > 0
-        images = gpuArray(images);
-        partial_masks = gpuArray(partial_masks);    
-        masks = gpuArray(masks);  
-    end
-    
-    inputs = {'input',images,'pmask',partial_masks,'gtMask',masks};
 end

@@ -1,4 +1,4 @@
-function [ net ] = deepmask_dropoutBefore_init( netOpts, trainOpts )
+function [ net, batchFn ] = deepmask_dropoutBefore_init( netOpts, trainOpts )
 
     % Default initalizations
     opts.train.batchSize = 50;
@@ -57,5 +57,21 @@ function [ net ] = deepmask_dropoutBefore_init( netOpts, trainOpts )
     % Meta parameters
     net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
     net.meta.trainOpts = [];
+    
+    batchFn = @(x,y)getBatchDeepmask(trainOpts,x,y);
 
+end
+
+
+% --------------------------------------------------------------------
+function [images, masks] = getBatchDeepmask(opts, imdb, batch)
+% --------------------------------------------------------------------
+    images = single(imdb.imdb(:,:,:,batch));
+    masks = single(imdb.masks(:,:,1,batch));
+    masks(masks == 0) = -1;    
+    
+    if numel(opts.gpus) > 0
+        images = gpuArray(images);
+        masks = gpuArray(masks);
+    end
 end
