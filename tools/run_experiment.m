@@ -5,6 +5,7 @@ function [ net, info ] = run_experiment( varargin )
     opts.arch = 'deepmask';
     opts.learningRate = 2e-6;
     opts.weightDecay = 0;
+    opts.momentum = 0.9;
     opts.batchSize = 50;
     opts.numEpochs = 8;
     opts.continue = false;
@@ -47,6 +48,7 @@ function [ net, info ] = run_experiment( varargin )
                     'train',struct('learningRate', opts.learningRate, ...
                                    'numEpochs',  opts.numEpochs, ...
                                    'weightDecay', opts.weightDecay, ...
+                                   'momentum', opts.momentum, ...
                                    'continue', opts.continue));    
 
 end
