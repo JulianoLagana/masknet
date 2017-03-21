@@ -65,6 +65,22 @@ function [net, info] = cnn_masknet(varargin)
             net = masknet3_init(opts.net);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
+        case 'masknet_RGB'
+            net = masknet_RGB_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;    
+        case 'masknet_RGB2'
+            net = masknet_RGB2_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
+        case 'masknet_RGB3'
+            net = masknet_RGB3_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
+        case 'masknet_BW'
+            net = masknet_BW_init(opts.net);
+            batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
+            isDag = true;
         otherwise
             error('Architecture not recognized.');
     end
