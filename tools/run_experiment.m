@@ -8,6 +8,7 @@ function [ net, info ] = run_experiment( varargin )
     opts.momentum = 0.9;
     opts.batchSize = 50;
     opts.numEpochs = 8;
+    opts.saveInterval = 1;
     opts.continue = false;
     
     % Specific architecture variables must be initalized by the caller
@@ -44,6 +45,7 @@ function [ net, info ] = run_experiment( varargin )
                                    'weightDecay', opts.weightDecay, ...
                                    'momentum', opts.momentum, ...
                                    'batchSize', opts.batchSize, ...
+                                   'saveInterval', opts.saveInterval, ...
                                    'continue', opts.continue));    
 
 end

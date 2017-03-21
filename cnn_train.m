@@ -45,6 +45,8 @@ opts.errorFunction = 'IoU' ;
 opts.errorLabels = {} ;
 opts.plotDiagnostics = false ;
 opts.plotStatistics = true;
+opts.saveInterval = 1;
+
 opts = vl_argparse(opts, varargin) ;
 
 if ~exist(opts.expDir, 'dir'), mkdir(opts.expDir) ; end
@@ -140,7 +142,7 @@ for epoch=start+1:opts.numEpochs
   if numel(params.gpus) <= 1
     [net, state] = processEpoch(net, state, params, 'train') ;
     [net, state] = processEpoch(net, state, params, 'val') ;
-    if ~evaluateMode
+    if ~evaluateMode && mod(epoch,opts.saveInterval)==0
       saveState(modelPath(epoch), net, state) ;
     end
     lastStats = state.stats ;
@@ -148,7 +150,7 @@ for epoch=start+1:opts.numEpochs
     spmd
       [net, state] = processEpoch(net, state, params, 'train') ;
       [net, state] = processEpoch(net, state, params, 'val') ;
-      if labindex == 1 && ~evaluateMode
+      if labindex == 1 && ~evaluateMode && mod(epoch,opts.saveInterval)==0
         saveState(modelPath(epoch), net, state) ;
       end
       lastStats = state.stats ;
@@ -159,7 +161,10 @@ for epoch=start+1:opts.numEpochs
   stats.train(epoch) = lastStats.train ;
   stats.val(epoch) = lastStats.val ;
   clear lastStats ;
-  saveStats(modelPath(epoch), stats) ;
+  
+  if mod(epoch,opts.saveInterval)==0
+    saveStats(modelPath(epoch), stats) ;
+  end
 
   if params.plotStatistics
     switchFigure(1) ; clf ;

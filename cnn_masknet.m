@@ -15,6 +15,7 @@ function [net, info] = cnn_masknet(varargin)
     opts.train.weightDecay = 0.00005 ;
     opts.train.momentum = 0.9 ;
     opts.train.batchSize = 50;
+    opts.train.saveInterval = 1;
     opts.train.continue = false;
     
     % Specific architecture variables must be initalized by the caller
