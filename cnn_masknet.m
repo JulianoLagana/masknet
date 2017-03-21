@@ -27,7 +27,7 @@ function [net, info] = cnn_masknet(varargin)
     fprintf('%s: resetting GPU\n', mfilename) ;
     clear mex ;
     clear vl_tmove vl_imreadjpeg ;
-    disp(gpuDevice(opts.train.gpus)) ;
+    gpuDevice(opts.train.gpus) ;
 
     % Load the chosen network architecture
     isDag = false;
