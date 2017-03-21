@@ -81,9 +81,9 @@ function [ net ] = masknet2_init( varargin )
     
     f = 1/100;
     
-    iConvMask = net.getParamIndex('convMask');
-    sz = size(net.params(iConvMask).value);
-    net.params(iConvMask).value = f*randn(sz,'single');
+    iConvMaskf = net.getParamIndex('convMaskf');
+    sz = size(net.params(iConvMaskf).value);
+    net.params(iConvMaskf).value = f*randn(sz,'single');
     
     iConv6f = net.getParamIndex('conv6f');
     sz = size(net.params(iConv6f).value);
