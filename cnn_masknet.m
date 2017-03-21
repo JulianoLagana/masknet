@@ -5,24 +5,20 @@ function [net, info] = cnn_masknet(varargin)
     opts.expDir = fullfile(pwd, 'data', 'exp') ;
     opts.dataDir =  fullfile(pwd, 'data');
     opts.imdbPath = fullfile(opts.dataDir, 'imdb.mat');
+    opts.arch = 'deepmask';
+    
+    % Default training parameters
     opts.train = struct() ;
     opts.train.gpus = 1;
-
-    % Default network parameters
-    opts.arch = 'deepmask';
-    opts.net.batchSize = 50 ;
-    opts.net.dropoutRate = 0.4;
-    
-    % Specific to masknet3
-    opts.net.nFeatures = 50;
-    opts.net.mSize = 100;
-
-    % Default training parameters
     opts.train.numEpochs = 3 ;
     opts.train.learningRate = 0.00001/5 ;
     opts.train.weightDecay = 0.00005 ;
     opts.train.momentum = 0.9 ;
+    opts.train.batchSize = 50;
     opts.train.continue = false;
+    
+    % Specific architecture variables must be initalized by the caller
+    opts.net = struct();
 
     % Override any options with the user-defined values
     opts = vl_argparse(opts, varargin) ;
@@ -38,47 +34,47 @@ function [net, info] = cnn_masknet(varargin)
     addpath archs;
     switch opts.arch
         case 'deepmask'
-            net = deepmask_init(opts.net);
+            net = deepmask_init(opts.net, opts.train);
             batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_dropoutBefore'
-            net = deepmask_dropoutBefore_init(opts.net);
+            net = deepmask_dropoutBefore_init(opts.net, opts.train);
             batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_dropoutAfter'
-            net = deepmask_dropoutAfter_init(opts.net);
-            batchFn = @(x,y)getBatchDeepmask(opts.trainx,y);
+            net = deepmask_dropoutAfter_init(opts.net, opts.train);
+            batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_bNorm'
-            net = deepmask_bNorm_init(opts.net);
+            net = deepmask_bNorm_init(opts.net, opts.train);
             batchFn = @(x,y)getBatchDeepmask(opts.train,x,y);
         case 'deepmask_dag'
-            net = deepmask_dag_init(opts.net);
+            net = deepmask_dag_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchDeepmaskDag(opts.train,x,y);
             isDag = true;
         case 'masknet'
-            net = masknet_init(opts.net);
+            net = masknet_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         case 'masknet2'
-            net = masknet2_init(opts.net);
+            net = masknet2_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         case 'masknet3'
-            net = masknet3_init(opts.net);
+            net = masknet3_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         case 'masknet_RGB'
-            net = masknet_RGB_init(opts.net);
+            net = masknet_RGB_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;    
         case 'masknet_RGB2'
-            net = masknet_RGB2_init(opts.net);
+            net = masknet_RGB2_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         case 'masknet_RGB3'
-            net = masknet_RGB3_init(opts.net);
+            net = masknet_RGB3_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         case 'masknet_BW'
-            net = masknet_BW_init(opts.net);
+            net = masknet_BW_init(opts.net, opts.train);
             batchFn = @(x,y) getBatchMasknet(opts.train,x,y);
             isDag = true;
         otherwise
@@ -121,14 +117,12 @@ function [net, info] = cnn_masknet(varargin)
         [net, info] = cnn_train_dag(net, imdb, batchFn, ...
           'expDir', opts.expDir, ...
           opts.train, ...
-          'batchSize', opts.net.batchSize, ...
           'train', find(set == 1), ...
           'val', find(set == 2)) ;
     else
         [net, info] = cnn_train(net, imdb, batchFn, ...
           'expDir', opts.expDir, ...
           opts.train, ...
-          'batchSize', opts.net.batchSize, ...
           'train', find(set == 1), ...
           'val', find(set == 2)) ;    
     end

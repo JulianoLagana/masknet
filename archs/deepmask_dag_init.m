@@ -1,14 +1,12 @@
-function [ net ] = deepmask_dag_init( varargin )
+function [ net ] = deepmask_dag_init( netOpts, trainOpts )
 
     % Default initalizations
-    opts.batchSize = 50;
-    opts.dropoutRate = 0.7;
-    opts.maskSize = [224 224];
-    opts.batchNormalization = 0;
+    opts.train.batchSize = 50;
+    opts.net.maskSize = [224 224];
     
     % Override default with user-specified values
-    [opts,~] = vl_argparse(opts, varargin) ;
-
+    opts.net = vl_argparse(opts.net, netOpts) ;
+    [opts.train, ~] = vl_argparse(opts.train, trainOpts) ;
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
@@ -37,7 +35,7 @@ function [ net ] = deepmask_dag_init( varargin )
     net.addLayer('reshape',reshapeBlock, {'x18'},{'x19'},{});
     
     % Constant grid generator for the upsampling layer
-    grid = single(create_meshgrid(opts.maskSize, opts.batchSize));
+    grid = single(create_meshgrid(opts.net.maskSize, opts.train.batchSize));
     constantGridBlock = dagnn.Constant('value', grid);
     net.addLayer('constantGridGen',constantGridBlock,{},{'grid'});
     
@@ -71,12 +69,7 @@ function [ net ] = deepmask_dag_init( varargin )
     sz = size(net.params(iConv8f).value);
     net.params(iConv8f).value = f*randn(sz,'single');
     
-    
-    
-    
-    
     % Meta parameters
-    net.meta.inputSize = [opts.maskSize(1) opts.maskSize(2) 3 opts.batchSize] ;
-    net.meta.trainOpts = [];
+    net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
 
 end

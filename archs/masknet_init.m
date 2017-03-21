@@ -1,13 +1,12 @@
-function [ net ] = masknet_init( varargin )
+function [ net ] = masknet_init( netOpts, trainOpts )
 
     % Default initalizations
-    opts.batchSize = 50;
-    opts.dropoutRate = 0.7;
-    opts.maskSize = [224 224];
-    opts.batchNormalization = 0;
+    opts.train.batchSize = 50;
+    opts.net.maskSize = [224 224];
     
     % Override default with user-specified values
-    opts = vl_argparse(opts, varargin) ;
+    opts.net = vl_argparse(opts.net, netOpts) ;
+    [opts.train, ~] = vl_argparse(opts.train, trainOpts) ;
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
@@ -19,7 +18,7 @@ function [ net ] = masknet_init( varargin )
     % Layers to concatenate VGG feature maps and partial mask
         
         % Constant grid generator for the upsampling layer
-        grid = single(create_meshgrid([13 13], opts.batchSize));
+        grid = single(create_meshgrid([13 13], opts.train.batchSize));
         constantGridBlock = dagnn.Constant('value', grid);
         net.addLayer('constantGridGen',constantGridBlock,{},{'grid'});
     
@@ -54,7 +53,7 @@ function [ net ] = masknet_init( varargin )
         net.addLayer('reshape',reshapeBlock, {'x18'},{'x19'},{});
 
         % Constant grid generator for the upsampling layer
-        grid2 = single(create_meshgrid(opts.maskSize, opts.batchSize));
+        grid2 = single(create_meshgrid(opts.net.maskSize, opts.train.batchSize));
         constantGridBlock2 = dagnn.Constant('value', grid2);
         net.addLayer('constantGridGen2',constantGridBlock2,{},{'grid2'});
 
@@ -89,7 +88,6 @@ function [ net ] = masknet_init( varargin )
     net.params(iConv8f).value = f*randn(sz,'single');
     
     % Meta parameters
-    net.meta.inputSize = [opts.maskSize(1) opts.maskSize(2) 3 opts.batchSize] ;
-    net.meta.trainOpts = [];
+    net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
 
 end

@@ -1,12 +1,12 @@
-function [ net ] = deepmask_bNorm_init( varargin )
+function [ net ] = deepmask_bNorm_init( netOpts, trainOpts )
 
     % Default initalizations
-    opts.batchSize = 50;
-    opts.dropoutRate = 0.7;
-    opts.maskSize = [224 224];
+    opts.net.maskSize = [224 224];
+    opts.train.batchSize = 50;
     
     % Override default with user-specified values
-    [opts, ~] = vl_argparse(opts, varargin) ;
+    opts.net = vl_argparse(opts.net, netOpts) ;
+    [opts.train, ~] = vl_argparse(opts.train, trainOpts) ;
 
     % The first part is just a VGG network, with all the layers after the
     % 14th removed
@@ -38,7 +38,7 @@ function [ net ] = deepmask_bNorm_init( varargin )
                                'newDim', [56,56,1]);
                            
     % Bilinear upsampling layer
-    grid = single(create_meshgrid(opts.maskSize, opts.batchSize));
+    grid = single(create_meshgrid(opts.net.maskSize, opts.train.batchSize));
     grid = gpuArray(grid);
     net.layers{end+1} = struct('type','bilinear',...
                                'grid',grid);     
@@ -59,8 +59,7 @@ function [ net ] = deepmask_bNorm_init( varargin )
     net = vl_simplenn_tidy(net);
     
     % Meta parameters
-    net.meta.inputSize = [opts.maskSize(1) opts.maskSize(2) 3 opts.batchSize] ;
-    net.meta.trainOpts = [];
+    net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
 
 end
 
