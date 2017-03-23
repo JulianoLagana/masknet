@@ -10,7 +10,7 @@ function [ net, batchFn ] = deepmask_dag_init( netOpts, trainOpts )
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
-    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net = load_vgg_feature_computer('data/models/imagenet-vgg-m.mat');
     net.meta = [];
     net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true);
     

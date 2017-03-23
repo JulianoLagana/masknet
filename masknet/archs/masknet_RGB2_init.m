@@ -1,4 +1,4 @@
-function [ net, batchFn ] = masknet_RGB_init( netOpts, trainOpts )
+function [ net, batchFn ] = masknet_RGB2_init( netOpts, trainOpts )
 
     % Default initalizations
     opts.train.batchSize = 50;
@@ -16,7 +16,7 @@ function [ net, batchFn ] = masknet_RGB_init( netOpts, trainOpts )
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
-    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net = load_vgg_feature_computer('data/models/imagenet-vgg-m.mat');
     net.meta = [];
     net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true);
     net.renameVar('x14','vgg_features');
@@ -92,7 +92,7 @@ function [ net, batchFn ] = masknet_RGB_init( netOpts, trainOpts )
     l2 = net.getLayerIndex('IoUerr');
     net.initParams(l1:l2);
     
-    f = 1/100;
+    f = 1/1000;
     iConv6f = net.getParamIndex('conv6f');
     sz = size(net.params(iConv6f).value);
     net.params(iConv6f).value = f*randn(sz,'single');
@@ -109,7 +109,6 @@ function [ net, batchFn ] = masknet_RGB_init( netOpts, trainOpts )
     
     % Meta parameters
     net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
-    net.meta.trainOpts = [];
     
     % Return batch function
     batchFn = @(x,y) getBatchMasknet(trainOpts,x,y);

@@ -1,7 +1,8 @@
-function [ net, batchFn ] = deepmask_init( netOpts, trainOpts )
+function [ net, batchFn ] = deepmask_dropoutBefore_init( netOpts, trainOpts )
 
     % Default initalizations
     opts.train.batchSize = 50;
+    opts.net.dropoutRate = 0.7;
     opts.net.maskSize = [224 224];
     
     % Override default with user-specified values
@@ -10,8 +11,7 @@ function [ net, batchFn ] = deepmask_init( netOpts, trainOpts )
 
     % The first part is just a VGG network, with all the layers after the
     % 14th removed
-    addpath tools
-    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net = load_vgg_feature_computer('data/models/imagenet-vgg-m.mat');
     net.meta = [];
     
     f = 1/100;
@@ -21,6 +21,10 @@ function [ net, batchFn ] = deepmask_init( netOpts, trainOpts )
                                'stride', 1, ...
                                'pad', 0) ;
     net.layers{end+1} = struct('type','relu');
+    
+    % Dropout layer
+    net.layers{end+1} = struct('type', 'dropout', ...
+                               'rate', opts.net.dropoutRate); 
     
     % Conv layer
     net.layers{end+1} = struct('type','conv',...
@@ -45,17 +49,19 @@ function [ net, batchFn ] = deepmask_init( netOpts, trainOpts )
                                'grid',grid);     
            
     % Logistic log-loss layer                           
-    net.layers{end+1} = struct('type','loss','loss','logistic','class', []);
+    net.layers{end+1} = struct('type','loss','loss','logistic','class', []);                          
     
     % Tidy the net
     net = vl_simplenn_tidy(net);
     
     % Meta parameters
     net.meta.inputSize = [opts.net.maskSize(1) opts.net.maskSize(2) 3 opts.train.batchSize] ;
-
-    % Return batch function
+    net.meta.trainOpts = [];
+    
     batchFn = @(x,y)getBatchDeepmask(trainOpts,x,y);
+
 end
+
 
 % --------------------------------------------------------------------
 function [images, masks] = getBatchDeepmask(opts, imdb, batch)

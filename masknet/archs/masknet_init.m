@@ -1,4 +1,4 @@
-function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
+function [ net, batchFn ] = masknet_init( netOpts, trainOpts )
 
     % Default initalizations
     opts.train.batchSize = 50;
@@ -10,7 +10,7 @@ function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
-    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net = load_vgg_feature_computer('data/models/imagenet-vgg-m.mat');
     net.meta = [];
     net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true);
     net.renameVar('x14','vgg_features');
@@ -28,16 +28,12 @@ function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
         
         % Concatenate feature maps with mask
         concatBlock = dagnn.Concat('dim',3);
-        net.addLayer('concatenate', concatBlock, {'vgg_features','pmask_rsz'},{'x14_before'});
-        
-        % Convolute them
-        convBlockMask = dagnn.Conv('size',[1 1 513 512], 'hasBias', true);
-        net.addLayer('convMask', convBlockMask, {'x14_before'}, {'x14'},{'convMaskf', 'convMaskb'});
+        net.addLayer('concatenate', concatBlock, {'vgg_features','pmask_rsz'},{'x14'});
     
     % New layers
     
         % Convolution layer
-        convBlock6 = dagnn.Conv('size', [1 1 512 512], 'hasBias', true) ;
+        convBlock6 = dagnn.Conv('size', [1 1 513 513], 'hasBias', true) ;
         net.addLayer('conv6', convBlock6, {'x14'}, {'x15'}, {'conv6f', 'conv6b'}) ;
 
         % ReLU layer
@@ -45,11 +41,11 @@ function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
         net.addLayer('relu6', reluBlock6, {'x15'}, {'x16'}, {}) ;
 
         % Convolution layer
-        convBlock7 = dagnn.Conv('size', [13 13 512 512], 'hasBias', true) ;
+        convBlock7 = dagnn.Conv('size', [13 13 513 513], 'hasBias', true) ;
         net.addLayer('conv7', convBlock7, {'x16'}, {'x17'}, {'conv7f', 'conv7b'}) ;
 
         % Convolution layer
-        convBlock8 = dagnn.Conv('size', [1 1 512 56^2], 'hasBias', true) ;
+        convBlock8 = dagnn.Conv('size', [1 1 513 56^2], 'hasBias', true) ;
         net.addLayer('conv8', convBlock8, {'x17'}, {'x18'}, {'conv8f', 'conv8b'}) ;
 
         % Reshape layer
@@ -74,16 +70,11 @@ function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
         net.addLayer('IoUerr', IoUblock, {'prediction','gtMask'},{'IoUerr'});
 
     % Randomly nitialize all parameters for the new layers
-    l1 = net.getLayerIndex('convMask');
+    l1 = net.getLayerIndex('conv6');
     l2 = net.getLayerIndex('IoUerr');
     net.initParams(l1:l2);
     
     f = 1/100;
-    
-    iConvMaskf = net.getParamIndex('convMaskf');
-    sz = size(net.params(iConvMaskf).value);
-    net.params(iConvMaskf).value = f*randn(sz,'single');
-    
     iConv6f = net.getParamIndex('conv6f');
     sz = size(net.params(iConv6f).value);
     net.params(iConv6f).value = f*randn(sz,'single');
@@ -122,3 +113,4 @@ function inputs = getBatchMasknet(opts, imdb, batch)
     
     inputs = {'input',images,'pmask',partial_masks,'gtMask',masks};
 end
+

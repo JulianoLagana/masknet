@@ -3,6 +3,6 @@
 *.pdf
 *.jpg
 *.jpeg
-tools/run_experiments.m
-tools/compare_experiments_script.m
+masknet/tools/run_experiments.m
+masknet/tools/compare_experiments_script.m
 data/*

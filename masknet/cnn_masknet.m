@@ -31,7 +31,6 @@ function [net, info] = cnn_masknet(varargin)
     gpuDevice(opts.train.gpus) ;
 
     % Load the chosen network architecture
-    addpath archs;
     initFn = str2func([opts.arch '_init']);
     [net, batchFn] = initFn(opts.net, opts.train);
 

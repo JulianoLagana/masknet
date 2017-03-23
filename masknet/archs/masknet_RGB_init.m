@@ -1,8 +1,8 @@
-function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
+function [ net, batchFn ] = masknet_RGB_init( netOpts, trainOpts )
 
     % Default initalizations
     opts.train.batchSize = 50;
-    opts.net.maskSize = [224 224];
+    opts.net.maskSize = [224 224];    
     opts.net.M = 80;
     opts.net.f = 50;
     
@@ -16,7 +16,7 @@ function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
     
     % The first part is pre-initialized VGG network, with all the layers after the
     % 14th removed
-    net = load_vgg_feature_computer('data/imagenet-vgg-m.mat');
+    net = load_vgg_feature_computer('data/models/imagenet-vgg-m.mat');
     net.meta = [];
     net = dagnn.DagNN.fromSimpleNN(net, 'canonicalNames', true);
     net.renameVar('x14','vgg_features');
@@ -26,13 +26,10 @@ function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
         % Scale RGB values
         scalingBlock = dagnn.Scale();
         net.addLayer('scale',scalingBlock, {'input'},{'input_scaled'},{'scaling_factor', 'scaling_bias'});
-        
-        convBlockBW = dagnn.Conv('size',[1 1 3 1],'hasBias',true);
-        net.addLayer('convBW',convBlockBW,{'input_scaled'},{'inputBW'},{'convBWf','convBWb'})
     
         % Concatenate partial mask and RGB values
         concatBlock = dagnn.Concat('dim',3);
-        net.addLayer('concatenate', concatBlock, {'pmask','inputBW'},{'pmaskBW'});
+        net.addLayer('concatenate', concatBlock, {'pmask','input_scaled'},{'pmaskRGB'});
     
         % Constant grid generator for the upsampling layer
         grid = single(create_meshgrid([M, M], opts.train.batchSize));
@@ -41,10 +38,10 @@ function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
     
         % Bilinear upsampling layer
         bilinearBlock1 = dagnn.BilinearSampler();
-        net.addLayer('bilinear1', bilinearBlock1, {'pmaskBW', 'grid'}, {'pmask_rsz'});
+        net.addLayer('bilinear1', bilinearBlock1, {'pmaskRGB', 'grid'}, {'pmask_rsz'});
         
         % Reshape layer
-        reshapeBlock1 = dagnn.Reshape('newDimensions',[1 1 2*M^2]);
+        reshapeBlock1 = dagnn.Reshape('newDimensions',[1 1 4*M^2]);
         net.addLayer('reshape1',reshapeBlock1, {'pmask_rsz'},{'pmask_vec'},{});
     
     % New layers
@@ -66,7 +63,7 @@ function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
         net.addLayer('concatenate2', concatBlock2, {'x16','pmask_vec'},{'x17'});
         
         % Huge fully connected layer
-        convBlock7 = dagnn.Conv('size', [1 1 (13^2*f+2*M^2) 56^2], 'hasBias', true) ;
+        convBlock7 = dagnn.Conv('size', [1 1 (13^2*f+4*M^2) 56^2], 'hasBias', true) ;
         net.addLayer('conv7', convBlock7, {'x17'}, {'x18'}, {'conv7f', 'conv7b'}) ;
         
         % Reshape layer
@@ -95,10 +92,7 @@ function [ net, batchFn ] = masknet_BW_init( netOpts, trainOpts )
     l2 = net.getLayerIndex('IoUerr');
     net.initParams(l1:l2);
     
-    iConvBW = net.getLayerIndex('convBW');
-    net.initParams(iConvBW);    
-    
-    f = 1/1000;
+    f = 1/100;
     iConv6f = net.getParamIndex('conv6f');
     sz = size(net.params(iConv6f).value);
     net.params(iConv6f).value = f*randn(sz,'single');
