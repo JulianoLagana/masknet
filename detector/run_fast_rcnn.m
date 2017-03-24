@@ -12,7 +12,7 @@ addpath(fullfile(vl_rootnn,'examples','fast_rcnn','bbox_functions')) ;
 
 opts.modelPath = '' ;
 opts.gpu = 1 ;
-opts.confThreshold = 0.5 ;
+opts.confThreshold = 0.8 ;
 opts.nmsThreshold = 0.3 ;
 opts.modelPath = 'data/models/fast-rcnn-vgg16-pascal07-dagnn.mat' ;
 
