@@ -1,4 +1,21 @@
 function [ segmented_image ] = segment( net, im )
+% segment(net, im) performs semantic segmentation on the image 'im' using
+% the FCN-8s network specified in 'net'. Note that this always performs the
+% computation in the GPU.
+%
+% Inputs:
+%   
+%   - net: FCN-8s network in the DagNN format used by MatConvNet. 
+% 
+%   - im : Input image.
+%   
+% Outputs:
+%
+%   - segmented image : WxHxD image, where each pixel in channel 'k'
+%   represents the probability that that pixel belongs to class 'k'. W and
+%   H are specified in the 'meta.normalization.imageSize' field inside
+%   'net'.
+%
 
     I = gpuArray(im);
     
