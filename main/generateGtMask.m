@@ -1,6 +1,32 @@
 function [ gtMask ] = generateGtMask( predictedBox, gtBoxes, ann, objseg, gtMaskSize )
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+% generateGtMask(predictedBox, gtBoxes, ann, objseg, gtMaskSize) generates
+% the ground truth data to train masknet. This is used to generate training
+% examples from the PASCAL VOC dataset.
+%
+% Inputs:
+%
+%   - predictedBox : vector specifying the bounding box to be used. This vector is 
+%   specified as [x y w h], where x and y are the coordinates of the top 
+%   left corner of the bounding box and w and h specify the height and 
+%   width of it. Note that the coordinate system used for x and y is 
+%   1-based, meaning that the topmost left pixel of any image has
+%   coordinates (1,1) (not 0,0).
+%
+%   - gtBoxes : Nx4 matrix specifying the N ground truth bounding boxes 
+%   present in the image being considered. Each bounding box must follow
+%   the same conventions specified for the input 'predictedBox'.
+%
+%   - ann : annotation data structure provided by PASCAL VOC for the image
+%   being considered.
+%
+%   - gtMaskSize : desired spatial dimensions for the generated ground
+%   truth data.
+%
+% Outputs:
+%
+%   - gtMask : Binary mask containing pixels that belong to {0, 1, 255}. 0
+%   means false, 1 means true and 255 means ignore.
+%
 
     cat_names = {'background','aeroplane','bicycle','bird','boat','bottle','bus','car','cat', ...
     'chair','cow','diningtable','dog','horse','motorbike','person','pottedplant', ...
