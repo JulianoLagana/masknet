@@ -25,7 +25,7 @@ for i = 1 : numel(ids)
     objseg = imread(objsegpath);
     
     % Get ground truth bounding boxes and put them in MATLAB's convention 
-    % (i.e. [x1,y1,x2,y2])
+    % (i.e. [x1,y1,x2,y2]). Note: PASCAL bboxes are 1-based.
     gtBoxes = reshape([ann.objects.bbox],4,[])';
     for iBox = 1 : size(gtBoxes,1)
         gtBoxes(iBox,3) = gtBoxes(iBox,3)-gtBoxes(iBox,1);
@@ -43,15 +43,16 @@ for i = 1 : numel(ids)
     segFCN = uint8(segFCN);
     clear net;
     
-    % Find bboxes using Fast-rcnn
-    props = generateProposals(img);
+    % Find bboxes using Fast-rcnn. Note: Fast-rcnn boxes are 0-based.
+    props = generateProposals(img); % this outputs 0-based bboxes
     boxes = run_fast_rcnn(img,props);
     
-    % Put bboxes in MATLAB's convention
+    % Put bboxes in MATLAB's convention.
     for iBox = 1 : size(boxes,1)
         boxes(iBox,3) = boxes(iBox,3)-boxes(iBox,1);
         boxes(iBox,4) = boxes(iBox,4)-boxes(iBox,2);
     end
+    boxes(:,1:4) = boxes(:,1:4)+1;
 
     % For each bbox found
     for j = 1 : size(boxes,1)
