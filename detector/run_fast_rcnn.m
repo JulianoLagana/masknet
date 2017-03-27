@@ -1,11 +1,22 @@
 function detections = run_fast_rcnn(im, boxes )
-%FAST_RCNN_DEMO  Demonstrates Fast-RCNN
+%run_fast_rcnn(im, boxes) Runs the Fast-RCNN net using as input the
+%provided image 'im' and the bounding box proposals 'boxes'.
 %
-% Copyright (C) 2016 Abhishek Dutta and Hakan Bilen.
-% All rights reserved.
+% Inputs:
 %
-% This file is part of the VLFeat library and is made available under
-% the terms of the BSD license (see the COPYING file).
+%   - im : Input image.
+%
+%   - boxes : Nx4 matrix specifying the N bounding boxes initial proposals.
+%   Each bounding box is specified as a 1x4 vector [x y w h], where x and y
+%   are the coordinates of the top left corner of the bounding box and w 
+%   and h specify the height and width of it. Note that the coordinate 
+%   system used for x and y is 0-based, meaning that the topmost left pixel
+%   of any image has coordinates (0,0) (not 1,1).
+%
+%
+% This was created from a file that was part of the VLFeat library and is 
+% made available under the terms of the BSD license of the VLFeaet library
+% (see the COPYING file).
 
 
 addpath(fullfile(vl_rootnn,'examples','fast_rcnn','bbox_functions')) ;
