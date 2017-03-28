@@ -24,8 +24,8 @@ function [ gtMask ] = generateGtMask( predictedBox, gtBoxes, ann, objseg, gtMask
 %
 % Outputs:
 %
-%   - gtMask : Binary mask containing pixels that belong to {0, 1, 255}. 0
-%   means false, 1 means true and 255 means ignore.
+%   - gtMask : Binary mask containing pixels that belong to {0, 1, 2}. 0
+%   means false, 1 means true and 2 means ignore.
 %
 
     cat_names = {'background','aeroplane','bicycle','bird','boat','bottle','bus','car','cat', ...
@@ -47,7 +47,7 @@ function [ gtMask ] = generateGtMask( predictedBox, gtBoxes, ann, objseg, gtMask
     if ~isempty(IoU) && IoU > 0
         % Generate mask with only the object corresponding to the
         % highest IoU bbox found
-        gtMask = uint8(objseg == mapObjIdxs(IoUidx)) + uint8(objseg == 255)*255;
+        gtMask = int8(objseg == mapObjIdxs(IoUidx)) + int8(objseg == 255)*2;
 
         % Remove ignore labels from other objects that might be inside
         % this region (this does not work perfectly yet)
@@ -60,7 +60,7 @@ function [ gtMask ] = generateGtMask( predictedBox, gtBoxes, ann, objseg, gtMask
     else
         gtMask = 0;
     end 
-    gtMask = uint8(gtMask);
+    gtMask = int8(gtMask);
 
     % Resize it to the desired size
     gtMask = imresize(gtMask, gtMaskSize, 'nearest');

@@ -1,16 +1,41 @@
-VOCinit;
+clear; clc; rng(1);
 
 % Parameters
 opts.savePath = 'data/VOC2012/SegmentationFCN';
 opts.saveSize = [224 224];
-DEBUG = true;
+DEBUG = false;
+
+% Initialize PASCAL VOC devkit functions
+VOCinit;
 
 % Read all image ids in the training and validation Pascal VOC dataset
 imgset = 'trainval';
 ids = textread(sprintf(VOCopts.seg.imgsetpath,imgset),'%s');
 
+% Shuffle the image ids
+ids = ids(randperm(numel(ids)));
+
+% Create .mat file and matfile object to write dataset
+delete 'pascal_imdb.mat';
+file = matfile('pascal_imdb.mat');
+
+% Create buffer
+bufferSize = 1000; % smallest possible value is 2, because of the way matfile initializes variables
+shuffleIdx = randperm(bufferSize);
+w = opts.saveSize(1);
+h = opts.saveSize(2);
+buffer1(1:w , 1:h , 3, bufferSize) = uint8(0);
+buffer2(1:w , 1:h , 1, bufferSize) = single(0);
+buffer3(1:w , 1:h , 1, bufferSize) = single(0);
+n = 0;
+nImagesSaved = 0;
+
 % For each image
+progressTick = max(1,round(numel(ids)/100));
+handleWaitBar = waitbar(0,'Please wait.');
+disp([num2str(numel(ids)) ' images in the ' imgset ' set.']);
 for i = 1 : numel(ids)
+    disp(['Processing image ' num2str(i) '...']);
     
     % Get the paths to the images, segmentations and annotations
     imgpath = sprintf(VOCopts.imgpath,ids{i});
@@ -57,13 +82,14 @@ for i = 1 : numel(ids)
     % For each bbox found
     for j = 1 : size(boxes,1)
         
-        % Generate image patch corresponding to the current bbox
+        % Generate the image patch corresponding to the current bbox
         patch = cutPatch(img,boxes(j,1:4));
+        patch = imresize(patch, opts.saveSize);
         
-        % Generate the corresponding ground truth to the current bbox
+        % Generate the ground truth corresponding to the current bbox
         gtMask = generateGtMask(boxes(j,:), gtBoxes, ann, objseg, opts.saveSize);        
         
-        % Generate the corresponding partial mask to the current bbox
+        % Generate the partial mask corresponding to the current bbox
         pMask = generatePartialMask(boxes, j, segFCN, opts.saveSize); 
         
         % DEBUG
@@ -72,10 +98,86 @@ for i = 1 : numel(ids)
         end
         
         % Put the masks in the format expected by matconvnet
+        gtMask(gtMask == 0) = -1;
+        gtMask(gtMask == 2) = 0;
+        pMask(pMask == 0) = -1;
         
+        % Save them in the buffers
+        n = n + 1;
+        buffer1(:,:,:,shuffleIdx(n)) = patch;
+        buffer2(:,:,1,shuffleIdx(n)) = pMask;
+        buffer3(:,:,1,shuffleIdx(n)) = gtMask;
+        
+        % If buffer is full, save to file and "empty" it
+        if n == bufferSize
+
+            % Debug
+            disp('writing to file');
+            % Determine if this is the first save
+            varlist = whos(file);
+            if numel(varlist) < 3
+                % If it is, we must create the variables without using the
+                % colon operator
+                file.imdb = buffer1;
+                file.partial_masks = buffer2;
+                file.masks = buffer3;
+                n = 0;
+                nImagesSaved = nImagesSaved + bufferSize;
+                shuffleIdx = randperm(bufferSize);
+            else
+                % If not, determine how many images were already saved, and
+                % start saving from there
+                file.imdb(: , : , : , nImagesSaved+1 : nImagesSaved+n) = buffer1;
+                file.partial_masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer2;
+                file.masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer3;
+                n = 0;
+                nImagesSaved = nImagesSaved + bufferSize;
+                shuffleIdx = randperm(bufferSize);
+            end
+
+        end
+    end
+    
+    % If it's the right time, update the progress bar
+    if mod(i,progressTick) == 0
+        progress = i/numel(ids);
+        msg = sprintf('Please wait: %i%% complete',round(progress*100));
+        waitbar(progress,handleWaitBar, msg);
     end
     
 end
+
+% Empty the buffer by saving the remaining contents to file
+if n > 0
+    
+    % Remove elements that are not from the current save
+    idxsSaved = sort(shuffleIdx(1:n));
+    buffer1 = buffer1(:,:,:,idxsSaved);
+    buffer2 = buffer2(:,:,1,idxsSaved);
+    buffer3 = buffer3(:,:,1,idxsSaved);
+    
+    % Determine if this is the first save
+    varlist = whos(file);
+    if numel(varlist) < 3
+        % If it is, we must create the variables without using the
+        % colon operator
+        file.imdb = buffer1;
+        file.partial_masks = buffer2;
+        file.masks = buffer3;
+        nImagesSaved = nImagesSaved + n;
+        n = 0;
+    else
+        % If not, determine how many images were already saved, and
+        % start saving from there
+        file.imdb(: , : , : , nImagesSaved+1 : nImagesSaved+n) = buffer1(:,:,:,1:n);
+        file.partial_masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer2(:,:,1,1:n);
+        file.masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer3(:,:,1,1:n);
+        nImagesSaved = nImagesSaved + n;
+        n = 0;
+    end
+    
+end
+close(handleWaitBar);
 
 
 function plotDebugInfo(img, clsseg, segFCN, boxes, gtBoxes, patch, pMask, gtMask, j)
@@ -125,9 +227,9 @@ function plotDebugInfo(img, clsseg, segFCN, boxes, gtBoxes, patch, pMask, gtMask
         title fcnSeg;
         
         subplot(2,3,4);
-        imshow(patch);
-        sz = size(patch);
-        sz = sz(1:2);
+        sz = boxes(j,[4 3]);
+        imshow(imresize(patch, sz));
+        
         title(['patch' num2str(j)]);
         
         subplot(2,3,5);

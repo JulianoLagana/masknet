@@ -43,8 +43,8 @@ function [ pMask ] = generatePartialMask( boxes, j, segmentation, pMaskSize)
     % Crop segmentation to current bbox
     mask3 = cutPatch(mask2,boxes(j,1:4));
     
-    % Resize and convert to uint8
-    pMask = uint8(imresize(mask3,pMaskSize));
+    % Resize and convert to int8
+    pMask = int8(imresize(mask3,pMaskSize));
     
     
 
