@@ -1,26 +1,30 @@
 clear; clc; rng(1);
+profile on;
 
 % Parameters
 opts.savePath = 'data/VOC2012/SegmentationFCN';
 opts.saveSize = [224 224];
-DEBUG = true;
+DEBUG = false;
 
 % Initialize PASCAL VOC devkit functions
 VOCinit;
 
 % Read all image ids in the training and validation Pascal VOC dataset
 imgset = 'trainval';
-ids = textread(sprintf(VOCopts.seg.imgsetpath,imgset),'%s');
+allIds = textread(sprintf(VOCopts.seg.imgsetpath,imgset),'%s');
 
 % Shuffle the image ids
-ids = ids(randperm(numel(ids)));
+allIds = allIds(randperm(numel(allIds)));
+
+% DEBUG
+%allIds = allIds(1:100);
 
 % Create .mat file and matfile object to write dataset
 delete 'pascal_imdb.mat';
 file = matfile('pascal_imdb.mat');
 
 % Create buffer
-bufferSize = 1000; % smallest possible value is 2, because of the way matfile initializes variables
+bufferSize = 100; % smallest possible value is 2, because of the way matfile initializes variables
 shuffleIdx = randperm(bufferSize);
 w = opts.saveSize(1);
 h = opts.saveSize(2);
@@ -30,122 +34,161 @@ buffer3(1:w , 1:h , 1, bufferSize) = single(0);
 n = 0;
 nImagesSaved = 0;
 
-% For each image
-progressTick = max(1,round(numel(ids)/100));
+nImages = numel(allIds);
+disp([num2str(nImages) ' images in the ' imgset ' set.']);
+
+% Process batches of images each iteration
+batchSize = 100;
+currentBatchNumber = 1;
+nBatchesInTotal = ceil(nImages/batchSize);
+
+% Initialize progress bar
+progressTick = max(1,round(nBatchesInTotal/100));
 handleWaitBar = waitbar(0,'Please wait.');
-disp([num2str(numel(ids)) ' images in the ' imgset ' set.']);
-for i = 1 : numel(ids)
-    disp(['Processing image ' num2str(i) '...']);
+
+% While there are still remaining images
+while ~isempty(allIds)
     
-    % Get the paths to the images, segmentations and annotations
-    imgpath = sprintf(VOCopts.imgpath,ids{i});
-    annopath = sprintf(VOCopts.annopath,ids{i});
-    clssegpath = sprintf(VOCopts.seg.clsimgpath,ids{i});
-    objsegpath = sprintf(VOCopts.seg.instimgpath,ids{i});
+    tic;    
+    disp(['--------- Batch ' num2str(currentBatchNumber) '/' num2str(nBatchesInTotal) ' ---------']);
     
-    % Load the images, annotations and segmentations
-    ann = PASreadrecord(annopath);
-    img = imread(imgpath);
-    clsseg = imread(clssegpath);
-    objseg = imread(objsegpath);
+    % Grab a batch of images
+    m = min(batchSize, numel(allIds));
+    ids = allIds(1:m);
     
-    % Get ground truth bounding boxes and put them in MATLAB's convention 
-    % (i.e. [x1,y1,x2,y2]). Note: PASCAL bboxes are 1-based.
-    gtBoxes = reshape([ann.objects.bbox],4,[])';
-    for iBox = 1 : size(gtBoxes,1)
-        gtBoxes(iBox,3) = gtBoxes(iBox,3)-gtBoxes(iBox,1);
-        gtBoxes(iBox,4) = gtBoxes(iBox,4)-gtBoxes(iBox,2);
+    % REMOVE THESE IDS
+    allIds(1:m) = [];
+    
+    % Initializations
+    anns = cell(1,m);
+    imgs = cell(1,m);
+    clssegs = cell(1,m);
+    objsegs = cell(1,m);
+    gtBoxes = cell(1,m);
+    props  = cell(1,m);    
+    
+    disp('Loading images and calculating initial proposals');
+    % For each image in the batch
+    for i = 1 : numel(ids)
+        
+        % Get the path to the image, annotations and segmentation
+        imgpath = sprintf(VOCopts.imgpath,ids{i});
+        annopath = sprintf(VOCopts.annopath,ids{i});
+        clssegpath = sprintf(VOCopts.seg.clsimgpath,ids{i});
+        objsegpath = sprintf(VOCopts.seg.instimgpath,ids{i});
+
+        % Load the image, annotation and segmentation
+        anns{i} = PASreadrecord(annopath);
+        imgs{i} = imread(imgpath);
+        clssegs{i} = imread(clssegpath);
+        objsegs{i} = imread(objsegpath);
+    
+        % Get ground truth bounding boxes and put them in MATLAB's convention 
+        % (i.e. [x1,y1,x2,y2]). Note: PASCAL bboxes are 1-based.
+        gtBoxes{i} = reshape([anns{i}.objects.bbox],4,[])';
+        for iBox = 1 : size(gtBoxes,1)
+            gtBoxes{i}(iBox,3) = gtBoxes{i}(iBox,3)-gtBoxes{i}(iBox,1);
+            gtBoxes{i}(iBox,4) = gtBoxes{i}(iBox,4)-gtBoxes{i}(iBox,2);
+        end
+        
+        % Generate proposals for bounding boxes (to be used by fast-rcnn)
+        props{i} = generateProposals(imgs{i}); % this outputs 0-based bboxes
+        
     end
-    
-    % Load FCN-8s
-    net = dagnn.DagNN.loadobj(load('data/models/pascal-fcn8s-dag.mat')) ;
-    
-    % Segment the image using FCN-8s
-    segFCN = segment(net, img);
-    sz = size(img);
-    sz = sz(1:2);
-    segFCN = imresize(segFCN,sz,'nearest');
-    segFCN = uint8(segFCN);
-    clear net;
+    % Segment the images using FCN-8s
+    disp('segmenting...');
+    segFCN = run_fcn_8s(imgs, 'gpu', 1);
     
     % Find bboxes using Fast-rcnn. Note: Fast-rcnn boxes are 0-based.
-    props = generateProposals(img); % this outputs 0-based bboxes
-    boxes = run_fast_rcnn({img},{props});
+    disp('rcnn...');
+    boxes = run_fast_rcnn(imgs,props);
     
-    % Put bboxes in MATLAB's convention.
-    boxes = boxes{1};
-    for iBox = 1 : size(boxes,1)
-        boxes(iBox,3) = boxes(iBox,3)-boxes(iBox,1);
-        boxes(iBox,4) = boxes(iBox,4)-boxes(iBox,2);
+    % Put predicted bboxes in MATLAB's convention.
+    for iImage = 1 : numel(boxes)
+       for iBox = 1 : size(boxes{iImage},1)
+          boxes{iImage}(iBox,3) = boxes{iImage}(iBox,3)-boxes{iImage}(iBox,1);
+          boxes{iImage}(iBox,4) = boxes{iImage}(iBox,4)-boxes{iImage}(iBox,2);
+       end
+       boxes{iImage}(:,1:4) = boxes{iImage}(:,1:4)+1;   
     end
-    boxes(:,1:4) = boxes(:,1:4)+1;
 
-    % For each bbox found
-    for j = 1 : size(boxes,1)
+    disp('Cropping and generating examples...');
+    
+    % For each image in the batch
+    for i = 1 : numel(ids)
         
-        % Generate the image patch corresponding to the current bbox
-        patch = cutPatch(img,boxes(j,1:4));
-        patch = imresize(patch, opts.saveSize);
-        
-        % Generate the ground truth corresponding to the current bbox
-        gtMask = generateGtMask(boxes(j,:), gtBoxes, ann, objseg, opts.saveSize);        
-        
-        % Generate the partial mask corresponding to the current bbox
-        pMask = generatePartialMask(boxes, j, segFCN, opts.saveSize); 
-        
-        % DEBUG
-        if(DEBUG)
-            plotDebugInfo(img,clsseg,segFCN,boxes,gtBoxes,patch,pMask,gtMask,j);
-        end
-        
-        % Put the masks in the format expected by matconvnet
-        gtMask(gtMask == 0) = -1;
-        gtMask(gtMask == 2) = 0;
-        pMask(pMask == 0) = -1;
-        
-        % Save them in the buffers
-        n = n + 1;
-        buffer1(:,:,:,shuffleIdx(n)) = patch;
-        buffer2(:,:,1,shuffleIdx(n)) = pMask;
-        buffer3(:,:,1,shuffleIdx(n)) = gtMask;
-        
-        % If buffer is full, save to file and "empty" it
-        if n == bufferSize
+        % For each bbox found for that image
+        for j = 1 : size(boxes{i},1)
 
-            % Debug
-            disp('writing to file');
-            % Determine if this is the first save
-            varlist = whos(file);
-            if numel(varlist) < 3
-                % If it is, we must create the variables without using the
-                % colon operator
-                file.imdb = buffer1;
-                file.partial_masks = buffer2;
-                file.masks = buffer3;
-                n = 0;
-                nImagesSaved = nImagesSaved + bufferSize;
-                shuffleIdx = randperm(bufferSize);
-            else
-                % If not, determine how many images were already saved, and
-                % start saving from there
-                file.imdb(: , : , : , nImagesSaved+1 : nImagesSaved+n) = buffer1;
-                file.partial_masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer2;
-                file.masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer3;
-                n = 0;
-                nImagesSaved = nImagesSaved + bufferSize;
-                shuffleIdx = randperm(bufferSize);
+            % Generate the image patch corresponding to the current bbox
+            patch = cutPatch(imgs{i},boxes{i}(j,1:4));
+            patch = imresize(patch, opts.saveSize);
+
+            % Generate the ground truth corresponding to the current bbox
+            gtMask = generateGtMask(boxes{i}(j,:), gtBoxes{i}, anns{i}, objsegs{i}, opts.saveSize);        
+
+            % Generate the partial mask corresponding to the current bbox
+            pMask = generatePartialMask(boxes{i}, j, segFCN{i}, opts.saveSize); 
+
+            % DEBUG
+            if(DEBUG)
+                plotDebugInfo(imgs{i},clssegs{i},segFCN{i},boxes{i},gtBoxes{i},patch,pMask,gtMask,j);
             end
 
+            % Put the masks in the format expected by matconvnet
+            gtMask(gtMask == 0) = -1;
+            gtMask(gtMask == 2) = 0;
+            pMask(pMask == 0) = -1;
+
+            % Save them in the buffers
+            n = n + 1;
+            buffer1(:,:,:,shuffleIdx(n)) = patch;
+            buffer2(:,:,1,shuffleIdx(n)) = pMask;
+            buffer3(:,:,1,shuffleIdx(n)) = gtMask;
+
+            % If buffer is full, save to file and "empty" it
+            if n == bufferSize
+
+                % Debug
+                disp('writing to file');
+                % Determine if this is the first save
+                varlist = whos(file);
+                if numel(varlist) < 3
+                    % If it is, we must create the variables without using the
+                    % colon operator
+                    file.imdb = buffer1;
+                    file.partial_masks = buffer2;
+                    file.masks = buffer3;
+                    n = 0;
+                    nImagesSaved = nImagesSaved + bufferSize;
+                    shuffleIdx = randperm(bufferSize);
+                else
+                    % If not, determine how many images were already saved, and
+                    % start saving from there
+                    file.imdb(: , : , : , nImagesSaved+1 : nImagesSaved+n) = buffer1;
+                    file.partial_masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer2;
+                    file.masks(:,:, 1, nImagesSaved+1 : nImagesSaved+n) = buffer3;
+                    n = 0;
+                    nImagesSaved = nImagesSaved + bufferSize;
+                    shuffleIdx = randperm(bufferSize);
+                end
+
+            end
         end
     end
     
+    disp('done.');
+    disp(['time spent: ' num2str(toc) 's']);
+    
     % If it's the right time, update the progress bar
-    if mod(i,progressTick) == 0
-        progress = i/numel(ids);
+    if mod(currentBatchNumber,progressTick) == 0
+        progress = currentBatchNumber/nBatchesInTotal;
         msg = sprintf('Please wait: %i%% complete',round(progress*100));
         waitbar(progress,handleWaitBar, msg);
     end
     
+    % Update batch number
+    currentBatchNumber = currentBatchNumber + 1;
 end
 
 % Empty the buffer by saving the remaining contents to file
@@ -179,6 +222,7 @@ if n > 0
     
 end
 close(handleWaitBar);
+profile viewer;
 
 
 function plotDebugInfo(img, clsseg, segFCN, boxes, gtBoxes, patch, pMask, gtMask, j)
@@ -241,6 +285,6 @@ function plotDebugInfo(img, clsseg, segFCN, boxes, gtBoxes, patch, pMask, gtMask
         imshow(imresize(pMask,sz,'nearest'),cMap);
         title(['pMask' num2str(j)]);
         
-        waitforbuttonpress;
+        %waitforbuttonpress;
 
 end

@@ -43,7 +43,6 @@ net.vars(net.getVarIndex('bbox_pred')).precious = 1 ;
 
 % Evaluate network either on CPU or GPU.
 if numel(opts.gpu) > 0
-  gpuDevice(opts.gpu) ;
   net.move('gpu') ;
 end
 
