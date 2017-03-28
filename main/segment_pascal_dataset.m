@@ -3,7 +3,7 @@ clear; clc; rng(1);
 % Parameters
 opts.savePath = 'data/VOC2012/SegmentationFCN';
 opts.saveSize = [224 224];
-DEBUG = false;
+DEBUG = true;
 
 % Initialize PASCAL VOC devkit functions
 VOCinit;
@@ -70,9 +70,10 @@ for i = 1 : numel(ids)
     
     % Find bboxes using Fast-rcnn. Note: Fast-rcnn boxes are 0-based.
     props = generateProposals(img); % this outputs 0-based bboxes
-    boxes = run_fast_rcnn(img,props);
+    boxes = run_fast_rcnn({img},{props});
     
     % Put bboxes in MATLAB's convention.
+    boxes = boxes{1};
     for iBox = 1 : size(boxes,1)
         boxes(iBox,3) = boxes(iBox,3)-boxes(iBox,1);
         boxes(iBox,4) = boxes(iBox,4)-boxes(iBox,2);
