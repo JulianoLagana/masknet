@@ -44,25 +44,31 @@ function [net, info] = cnn_masknet(varargin)
     % Separate data in training and validation samples (because of the way a
     % matfile object accesses data, they cannot be randomly sampled)
     temp = whos(imdb);
-    nImages = temp(1).size(4);
-    training_ratio = 0.7;
-    validation_ratio = 0.15;
-    set = zeros(nImages,1);
-    for i = 1 : nImages
+    if any(strcmp({temp.name},'sets'))
+        % Unless the imdb file already has a 'sets' variable. In that case,
+        % use it.
+        set = imdb.sets;
+    else
+        nImages = temp(1).size(4);
+        training_ratio = 0.7;
+        validation_ratio = 0.15;
+        set = zeros(nImages,1);
+        for i = 1 : nImages
 
-        % Training set
-        if i <= nImages*training_ratio
-            set(i) = 1;
+            % Training set
+            if i <= nImages*training_ratio
+                set(i) = 1;
 
-        % Validation set
-        elseif i <= nImages*(training_ratio + validation_ratio)
-            set(i) = 2;
+            % Validation set
+            elseif i <= nImages*(training_ratio + validation_ratio)
+                set(i) = 2;
 
-        % Test set
-        else
-            set(i) = 3;
+            % Test set
+            else
+                set(i) = 3;
+            end
+
         end
-
     end
 
     % Train
