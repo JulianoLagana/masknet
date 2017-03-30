@@ -19,6 +19,8 @@ function [ gtMask ] = generateGtMask( predictedBox, gtBoxes, ann, objseg, gtMask
 %   - ann : annotation data structure provided by PASCAL VOC for the image
 %   being considered.
 %
+%   - objseg : ground truth segmentation for the image being considered
+%
 %   - gtMaskSize : desired spatial dimensions for the generated ground
 %   truth data.
 %
