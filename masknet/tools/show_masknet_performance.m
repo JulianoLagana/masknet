@@ -25,21 +25,25 @@ function [  ] = show_masknet_performance( net , imdb, start)
         imgIdx = net.getVarIndex('input');
         im = gather(net.vars(imgIdx).value(:,:,:,1)/255);
         image(im);
+        title input;
         
         subplot(2,2,2);
         pmaskIdx = net.getVarIndex('pmask');
         pmask = gather(net.vars(pmaskIdx).value(:,:,:,1) > 0);
         image(imfuse(im, pmask ,'blend','Scaling','joint'));
+        title pmask;
         
         subplot(2,2,3);
         predIdx = net.getVarIndex('prediction');
         pred = gather(net.vars(predIdx).value(:,:,:,1) > 0);
         image(imfuse(im, pred ,'blend','Scaling','joint'));
+        title prediction;
         
         subplot(2,2,4);
         gtIdx = net.getVarIndex('gtMask');
         gt = gather(net.vars(gtIdx).value(:,:,:,1) > 0);
         image(imfuse(im, gt ,'blend','Scaling','joint'));
+        title gtMask;
         
         % Wait for user visualization
         waitforbuttonpress;
