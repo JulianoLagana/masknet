@@ -1,5 +1,4 @@
 clear; clc; rng(1);
-profile on;
 
 % Parameters
 opts.savePath = 'data/VOC2012/SegmentationFCN';
@@ -9,11 +8,10 @@ DEBUG = false;
 % Initialize PASCAL VOC devkit functions
 VOCinit;
 
-% Read all image ids in the training and validation Pascal VOC dataset
-imgset = 'trainval';
+% Read all image ids in the training and validation Pascal VOC dataset and
+% shuffle it
+imgset = 'val';
 allIds = textread(sprintf(VOCopts.seg.imgsetpath,imgset),'%s');
-
-% Shuffle the image ids
 allIds = allIds(randperm(numel(allIds)));
 
 % DEBUG
@@ -24,7 +22,7 @@ delete 'pascal_imdb.mat';
 file = matfile('pascal_imdb.mat');
 
 % Create buffer
-bufferSize = 100; % smallest possible value is 2, because of the way matfile initializes variables
+bufferSize = 300; % smallest possible value is 2, because of the way matfile initializes variables
 shuffleIdx = randperm(bufferSize);
 w = opts.saveSize(1);
 h = opts.saveSize(2);
