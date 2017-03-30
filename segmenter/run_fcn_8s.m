@@ -5,17 +5,18 @@ function [ segmented_image ] = run_fcn_8s( im, varargin )
 %
 % Inputs:
 %   
-%   - net: FCN-8s network in the DagNN format used by MatConvNet. 
-% 
-%   - im : Input image.
+%   - im : Cell array of input images.
+%
+%   - varargin : Cell array containing name value pairs for overriding the
+%   default parameters.
 %   
 % Outputs:
 %
-%   - segmented image : WxHxD image, where each pixel in channel 'k'
-%   represents the probability that that pixel belongs to class 'k'. W and
-%   H are specified in the 'meta.normalization.imageSize' field inside
-%   'net'.
+%   - segmented image : Cell array of output images. Each cell contains a
+%   WxHx1 image, where the value at each pixel is the number of the
+%   class to which it most probably belongs according to the FCN-8s output.
 %
+
     % Default parameters
     opts.gpu = 0;
 
