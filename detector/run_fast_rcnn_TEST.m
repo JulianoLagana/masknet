@@ -1,3 +1,5 @@
+% SCRIPT TO TEST THE CORRECT FUNCTIONING OF THE run_fast_rcnn FUNCTION.
+
 clear; clc; 
 
 % Initialize PASCAL VOC devkit functions
