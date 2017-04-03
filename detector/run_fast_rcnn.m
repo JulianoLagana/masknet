@@ -15,6 +15,13 @@ function detections = run_fast_rcnn(imgs, boxMatrix )
 %   meaning that the topmost left pixel of any image has coordinates (0,0) 
 %   (not 1,1).
 %
+% Outputs:
+% 
+%   - detections : Cell array, each entry is a Nx6 matrix, where each line
+%   is one detection from fast-rcnn. The first four columns represent the
+%   parameters [x y w h] of each bounding box. The fifth column is the
+%   confidence level of the classification and the sixth column is the
+%   classified category.
 %
 % This was created from a file that was part of the VLFeat library and was 
 % made available under the terms of the BSD license of the VLFeaet library
