@@ -59,10 +59,8 @@ function inputs = getBatch(imdb, batch)
     images = single(imdb.imdb(:,:,:,batch));
     
     partial_masks = single(imdb.partial_masks(:,:,1,batch));
-    partial_masks(partial_masks == 0) = -1;
     
     masks = single(imdb.masks(:,:,1,batch));
-    masks(masks == 0) = -1;
     
     images = gpuArray(images);
     partial_masks = gpuArray(partial_masks);    
