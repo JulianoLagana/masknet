@@ -24,7 +24,7 @@ function [ net, info ] = run_experiment( varargin )
                        '_batch' num2str(opts.batchSize)];
                                            
     % Add to experiment name the parameters specific to chosen architecture
-    specificNames = fieldnames(opts.net);
+    specificNames = sort(fieldnames(opts.net));
     for i = 1 : numel(specificNames)
         experimentName = [experimentName '_' specificNames{i} num2str(opts.net.(specificNames{i}))];        
     end
