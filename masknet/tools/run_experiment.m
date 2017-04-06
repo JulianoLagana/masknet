@@ -29,8 +29,10 @@ function [ net, info ] = run_experiment( varargin )
         experimentName = [experimentName '_' specificNames{i} num2str(opts.net.(specificNames{i}))];        
     end
     
-    % Replace decimal separator with 'p', so that the resulting name is a valid path
+    % Replace invalid characters so that the resulting name is a valid path
     experimentName = strrep(experimentName,'.','p');
+    experimentName = strrep(experimentName,'/','!');
+    experimentName = strrep(experimentName,'\','!');
     
     % Create directory name
     expDirName = fullfile('data', 'experiments', opts.arch, opts.imdb, experimentName);
