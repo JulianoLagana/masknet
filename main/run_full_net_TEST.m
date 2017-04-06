@@ -2,7 +2,7 @@
 VOCinit;
 
 % Read first n image ids in the training and validation Pascal VOC dataset
-n = 100;
+n = 10;
 ids = textread(sprintf(VOCopts.seg.imgsetpath,'trainval'),'%s');
 ids = ids(1:n);
 
@@ -13,4 +13,5 @@ for i = 1 : n
 end
 
 % Run full net
-run_full_net(imgs, 'verbose', true);
+masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr1e-06_wd0_mom0p9_batch30_preInitModelPathdata!experiments!masknet3!COCO_datasets!centered_imdb!lr2e-06_wd0_mom0p9_batch30_M224_f300!net-epoch-5pmat/net-epoch-4.mat';
+run_full_net(imgs, 'verbose', true, 'masknetPath', masknetPath);

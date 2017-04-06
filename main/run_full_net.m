@@ -14,6 +14,7 @@ function [  ] = run_full_net( imgs, varargin )
 
     % Generate proposals for all images 
     if opts.verbose
+        tic;
         disp('generating proposals...');
     end
     for i = 1 : numel(imgs)  
@@ -41,13 +42,14 @@ function [  ] = run_full_net( imgs, varargin )
     end    
     segFCN = run_fcn_8s(imgs, 'gpu', 1);
 
-    if opts.verbose
+    if opts.verbose   
+        toc
         disp('running masknet...');
-    end    
-    segFCN = run_fcn_8s(imgs, 'gpu', 1);
+    end 
     
     % Load masknet
-    net = loadMasknet(opts.masknetPath,'batchSize',1);
+    net = masknet3_init({'preInitModelPath', opts.masknetPath},{'batchSize', 1});
+    net.mode = 'test';
     
     % For each image
     for i = 1 : numel(imgs)
