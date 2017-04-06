@@ -15,7 +15,7 @@ function [  ] = show_masknet_performance( net , imdb, start)
     for i = round(nImages*start)+1 : nImages
         
         % Load the image, the partial mask and the mask
-        inputs = getBatch(file,i:i+49);
+        inputs = getBatch(file,i:i+29);
         
         % Process the feature map using the provided network
         net.eval(inputs);
