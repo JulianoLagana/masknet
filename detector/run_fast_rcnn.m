@@ -1,4 +1,4 @@
-function detections = run_fast_rcnn(imgs, boxMatrix )
+function detections = run_fast_rcnn(imgs, boxMatrix, varargin )
 %run_fast_rcnn(im, boxes) Runs the Fast-RCNN net using as input the
 %provided images inside the cell array 'im' and the bounding box proposals 
 %inside the cell array 'boxes'.
@@ -37,6 +37,7 @@ opts.gpu = 1 ;
 opts.confThreshold = 0.8 ;
 opts.nmsThreshold = 0.3 ;
 opts.modelPath = 'data/models/fast-rcnn-vgg16-pascal07-dagnn.mat' ;
+opts = vl_argparse(opts,varargin);
 
 % Load the network and put it in test mode.
 net = load(opts.modelPath) ;
