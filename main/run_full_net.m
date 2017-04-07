@@ -1,16 +1,20 @@
-function [  ] = run_full_net( imgs, varargin )
+function [ instances ] = run_full_net( imgs, imgIds, varargin )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
     % Default parameters
     opts.verbose = false;
+    opts.debug = false;
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr2e-06_wd0_mom0p9_batch50_maskSize224  224_M224_f200/net-epoch-20';
+    opts.sensitivity = 0.8;
+    opts.initInstances = [];
     
     % Override default parameters with user-supplied values
     opts = vl_argparse(opts,varargin);
     
     % Initializations
     masknetInputSize = [224 224];
+    instances = opts.initInstances;
 
     % Generate proposals for all images 
     if opts.verbose
@@ -25,7 +29,7 @@ function [  ] = run_full_net( imgs, varargin )
     if opts.verbose
         disp('running fast-rcnn...');
     end    
-    detections = run_fast_rcnn(imgs,props);
+    detections = run_fast_rcnn(imgs,props,'confThreshold',0.2);
 
     % Put detections in MATLAB's bbox convention.
     for iImage = 1 : numel(detections)
@@ -55,7 +59,6 @@ function [  ] = run_full_net( imgs, varargin )
     for i = 1 : numel(imgs)
         
         segImage = zeros(size(imgs{i},1), size(imgs{i},2));
-        instanceNumber = 1;
         
         % For each detection
         for j = 1 : size(detections{i},1)
@@ -79,30 +82,65 @@ function [  ] = run_full_net( imgs, varargin )
             % Resize the mask to the initial bounding box size
             bbox = round(detections{i});
             mask = imresize(mask, bbox(j,[4 3])+1, 'nearest');
-            
-            % Add this instance to segImage
+                        
             x = max(bbox(j,1), 1);
             y = max(bbox(j,2), 1);
             w = bbox(j,3);
             h = bbox(j,4);
             s = inf*size(imgs{i});
-            segImage(y:min(y+h,s(1)) , x:min(x+w,s(2))) = mask.*instanceNumber;
             
-            instanceNumber = instanceNumber + 1;
+            % Add instance to found instances
+            segImage(y:min(y+h,s(1)) , x:min(x+w,s(2))) = mask;  
+            nInstances = numel(instances);
+            instances(nInstances+1).imgId = imgIds{i};
+            instances(nInstances+1).segmentation = segImage;
+            instances(nInstances+1).score = detections{i}(j,end-1);
+            instances(nInstances+1).catId = detections{i}(j,end);
             
-        end
-        
-        % Show instance segmentation
-        subplot(1,2,1); 
-        imshow(imgs{i})
-        subplot(1,2,2);
-        imagesc(segImage);
-        axis image;
-        waitforbuttonpress;
+        end        
         
     end
             
 
 
 end
+
+function plotDebugInfo(image, detections, partSegImage, segMultiImage)
+
+    subplot(2,2,1);
+    imshow(image);
+    plotBboxes(detections);
+    
+    subplot(2,2,2);
+    imshow(createOverlayFromMultiImg(partSegImage)); % Change this to overlay
+    axis image;
+    plotBboxes(detections);
+    
+    subplot(2,2,3);
+    imshow(createOverlayFromMultiImg(segMultiImage*0.9)); % Change this to overlay
+    axis image;
+    plotBboxes(detections);
+    
+    subplot(2,2,4);
+    
+    
+    waitforbuttonpress;
+
+end
+
+function plotBboxes(boxes)
+
+    cat_names = {'background','aeroplane','bicycle','bird','boat','bottle','bus','car','cat', ...
+        'chair','cow','diningtable','dog','horse','motorbike','person','pottedplant', ...
+        'sheep','sofa','train','tvmonitor'};
+    cMap = VOClabelcolormap(256);
+    
+    for k = 1 : size(boxes,1)
+            boxes = double(boxes);
+            rectangle('Position',boxes(k,1:4), 'EdgeColor',cMap(boxes(k,end),:));
+            text(boxes(k,1), boxes(k,2)-5, [cat_names{boxes(k,end)} ' ' num2str(boxes(k,end-1))], 'FontSize', 10, 'Color', 'r');
+    end
+    
+end
+
 
