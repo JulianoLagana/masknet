@@ -58,8 +58,6 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     % For each image
     for i = 1 : numel(imgs)
         
-        segImage = zeros(size(imgs{i},1), size(imgs{i},2));
-        
         % For each detection
         for j = 1 : size(detections{i},1)
             
@@ -80,17 +78,19 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
             mask = single(mask > 0);
             
             % Resize the mask to the initial bounding box size
-            bbox = round(detections{i});
-            mask = imresize(mask, bbox(j,[4 3])+1, 'nearest');
-                        
+            bbox = round(detections{i});                                    
             x = max(bbox(j,1), 1);
             y = max(bbox(j,2), 1);
             w = bbox(j,3);
             h = bbox(j,4);
-            s = inf*size(imgs{i});
+            s = size(imgs{i});
+            mask = imresize(mask, [numel(y:min(y+h,s(1))) , numel(x:min(x+w,s(2)))], 'nearest');
+            
+            % Create segmentation map for this instance
+            segImage = zeros(size(imgs{i},1), size(imgs{i},2));
+            segImage(y:min(y+h,s(1)) , x:min(x+w,s(2))) = mask;  
             
             % Add instance to found instances
-            segImage(y:min(y+h,s(1)) , x:min(x+w,s(2))) = mask;  
             nInstances = numel(instances);
             instances(nInstances+1).imgId = imgIds{i};
             instances(nInstances+1).segmentation = segImage;
