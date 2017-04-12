@@ -1,12 +1,4 @@
-function [  ] = evaluateMAPPascal( instances, varargin )
-
-    % Default parameter values
-    opts.IoUThreshold = 0.5;
-    opts.confidenceLevels = linspace(0.1,1,10);
-    opts.debug = false;
-    
-    % Override with user supplied values
-    opts = vl_argparse(opts,varargin);
+function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( instances, tp, fp, fn, varargin )
 
     % Initialize PASCAL VOC devkit functions
     VOCinit;
@@ -14,10 +6,30 @@ function [  ] = evaluateMAPPascal( instances, varargin )
     'chair','cow','diningtable','dog','horse','motorbike','person','pottedplant', ...
     'sheep','sofa','train','tvmonitor'};
 
-    % Other initializations
-    truePositives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
-    falsePositives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
-    falseNegatives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
+    % Default parameter values
+    opts.IoUThreshold = 0.5;
+    opts.confidenceLevels = linspace(0.1,1,10);
+    opts.debug = false;
+
+    % Override with user supplied values
+    opts = vl_argparse(opts,varargin);
+    
+    % Initialize aggregators
+    if isempty(tp)
+        truePositives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
+    else
+        truePositives = tp;
+    end
+    if isempty(fp)
+        falsePositives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
+    else
+        falsePositives = fp;
+    end
+    if isempty(fn) 
+        falseNegatives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
+    else
+        falseNegatives = fn;
+    end    
 
     % Find all image ids
     imgIds = unique({instances.imgId});
@@ -162,12 +174,10 @@ function [  ] = evaluateMAPPascal( instances, varargin )
                 waitforbuttonpress;
                 clc;
             end
+            
         end
         
-
-
-        
-    end
+    end    
     
 end
 
