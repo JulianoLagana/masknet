@@ -8,6 +8,7 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr2e-06_wd0_mom0p9_batch50_maskSize224  224_M224_f200/net-epoch-20';
     opts.sensitivity = 0.8;
     opts.initInstances = [];
+    opts.gpu = 1;
     
     % Override default parameters with user-supplied values
     opts = vl_argparse(opts,varargin);
@@ -19,7 +20,7 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     % Generate proposals for all images 
     if opts.verbose
         tic;
-        disp('generating proposals...');
+        fprintf('generating proposals...');
     end
     for i = 1 : numel(imgs)  
        props{i} = generateProposals(imgs{i});
@@ -27,9 +28,11 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     
     % Run fast-rcnn
     if opts.verbose
-        disp('running fast-rcnn...');
+        fprintf(' (%.3fs)',toc);
+        tic;
+        fprintf('\nrunning fast-rcnn...');
     end    
-    detections = run_fast_rcnn(imgs,props,'confThreshold',0.2);
+    detections = run_fast_rcnn(imgs,props,'confThreshold',0.1,'gpu',opts.gpu);
 
     % Put detections in MATLAB's bbox convention.
     for iImage = 1 : numel(detections)
@@ -42,18 +45,24 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     
     % Run FCN-8s in all images
     if opts.verbose
-        disp('running fcn-8s...');
+        fprintf(' (%.3fs)',toc);
+        tic;
+        fprintf('\nrunning fcn-8s...');
     end    
-    segFCN = run_fcn_8s(imgs, 'gpu', 1);
+    segFCN = run_fcn_8s(imgs, 'gpu', opts.gpu);
 
     if opts.verbose   
-        toc
-        disp('running masknet...');
+        fprintf(' (%.3fs)',toc);
+        tic;
+        fprintf('\nrunning masknet...');
     end 
     
     % Load masknet
     net = masknet3_init({'preInitModelPath', opts.masknetPath},{'batchSize', 1});
     net.mode = 'test';
+    if opts.gpu >= 1
+        net.move('gpu');
+    end
     
     % For each image
     for i = 1 : numel(imgs)
@@ -71,10 +80,16 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
             % Put the partial mask in the format expected by matconvnet
             pMask(pMask == 0) = -1;         
             
+            % Transfer input data to gpu if needed
+            if opts.gpu >= 1
+                inputs = {'input',gpuArray(single(patch)),'pmask',gpuArray(single(pMask))};
+            else
+                inputs = {'input',single(patch),'pmask',single(pMask)};
+            end
+            
             % Run masknet
-            inputs = {'input',single(patch),'pmask',single(pMask)};
             net.eval(inputs);
-            mask = net.vars(net.getVarIndex('prediction')).value;
+            mask = gather(net.vars(net.getVarIndex('prediction')).value);
             mask = single(mask > 0);
             
             % Resize the mask to the initial bounding box size
@@ -99,6 +114,10 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
             
         end        
         
+    end
+    
+    if opts.verbose
+        fprintf(' (%.3fs)\n',toc);
     end
             
 
