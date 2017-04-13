@@ -6,7 +6,6 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     opts.verbose = false;
     opts.debug = false;
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr2e-06_wd0_mom0p9_batch50_maskSize224  224_M224_f200/net-epoch-20';
-    opts.sensitivity = 0.8;
     opts.initInstances = [];
     opts.gpu = 1;
     
