@@ -7,9 +7,10 @@ cat_names = {'background','aeroplane','bicycle','bird','boat','bottle','bus','ca
 'sheep','sofa','train','tvmonitor'};
 
 % Parameters
-opts.batchSize = 100;
+opts.batchSize = 3;
 opts.confidenceLevels = linspace(0,1,100);
 opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr1e-06_wd0_mom0p9_batch30_preInitModelPathdata!experiments!masknet3!COCO_datasets!centered_imdb!lr2e-06_wd0_mom0p9_batch30_M224_f300!net-epoch-5pmat/net-epoch-4.mat';
+opts.useGtMasks = true;
 
 % Initialize aggregators
 truePositives = zeros(numel(opts.confidenceLevels),numel(cat_names)-1);
@@ -38,9 +39,25 @@ while ~isempty(ids)
         imgpath = sprintf(VOCopts.imgpath,idsToProcess{i});
         imgs{i} = imread(imgpath);
     end
+    
+    % If necessary, load the ground truth data
+    anns = cell(1,batchSize);
+    objsegs = cell(1,batchSize);
+    for i = 1 : batchSize        
+        if opts.useGtMasks
+            annopath = sprintf(VOCopts.annopath,idsToProcess{i});
+            anns{i} = PASreadrecord(annopath);
+            objsegpath = sprintf(VOCopts.seg.instimgpath,idsToProcess{i});
+            objsegs{i} = imread(objsegpath);
+        end
+    end
 
     % Run full net
-    instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath);
+    if ~opts.useGtMasks
+        instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath);
+    else
+        instances = run_full_net_useGtMasks(imgs,idsToProcess,anns,objsegs,'verbose',true,'masknetPath',opts.masknetPath);
+    end
     
     % Aggregate values for computing MAP score
     tic;
@@ -53,4 +70,5 @@ while ~isempty(ids)
     
 end
 
+AP = evaluateMAP(truePositives,falsePositives,falseNegatives)
 save aggregators truePositives falsePositives falseNegatives;
