@@ -7,11 +7,11 @@ function evaluateNetPascal(varargin)
     'sheep','sofa','train','tvmonitor'};
 
     % Parameters
-    opts.gpu = false;
+    opts.gpu = true;
     opts.batchSize = 100;
     opts.confidenceLevels = linspace(0,1,100);
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr1e-06_wd0_mom0p9_batch30_preInitModelPathdata!experiments!masknet3!COCO_datasets!centered_imdb!lr2e-06_wd0_mom0p9_batch30_M224_f300!net-epoch-5pmat/net-epoch-4.mat';
-    opts.useGt = 'loc';
+    opts.useGt = '';
     opts.modelName = 'unnamed';
     opts = vl_argparse(opts,varargin);
 
@@ -44,10 +44,10 @@ function evaluateNetPascal(varargin)
         end
 
         % If necessary, load the ground truth data
-        anns = cell(1,batchSize);
-        objsegs = cell(1,batchSize);
-        for i = 1 : batchSize        
-            if ~isempty(opts.useGt)
+        if ~isempty(opts.useGt)
+            anns = cell(1,batchSize);
+            objsegs = cell(1,batchSize);
+            for i = 1 : batchSize 
                 annopath = sprintf(VOCopts.annopath,idsToProcess{i});
                 anns{i} = PASreadrecord(annopath);
                 objsegpath = sprintf(VOCopts.seg.instimgpath,idsToProcess{i});
@@ -57,12 +57,14 @@ function evaluateNetPascal(varargin)
 
         % Run full net
         switch opts.useGt
-            case 'masks'
+            case 'mask'
                 instances = run_full_net_useGtMasks(imgs,idsToProcess,anns,objsegs,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
             case 'loc'
                 instances = run_full_net_useGtLoc(imgs,idsToProcess,anns,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
-            otherwise
+            case ''
                 instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath, 'gpu',opts.gpu); 
+            otherwise
+                error(sprintf('options useGt: "%s" is unknown.',opts.useGt));
         end
 
         % Aggregate values for computing MAP score
