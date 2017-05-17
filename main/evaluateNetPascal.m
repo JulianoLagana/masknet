@@ -13,6 +13,7 @@ function evaluateNetPascal(varargin)
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr1e-06_wd0_mom0p9_batch30_preInitModelPathdata!experiments!masknet3!COCO_datasets!centered_imdb!lr2e-06_wd0_mom0p9_batch30_M224_f300!net-epoch-5pmat/net-epoch-4.mat';
     opts.useGt = '';
     opts.modelName = 'unnamed';
+    opts.usesPartialMasks = true;
     opts = vl_argparse(opts,varargin);
 
     % Initialize aggregators
@@ -25,7 +26,7 @@ function evaluateNetPascal(varargin)
 
     % Choose all validation images
     ids = textread(sprintf(VOCopts.seg.imgsetpath,'val'),'%s');
-    nImages = numel(ids);
+    nImages = numel(ids);    
 
     while ~isempty(ids)
 
@@ -56,17 +57,20 @@ function evaluateNetPascal(varargin)
         end
 
         % Run full net
-        switch opts.useGt
-            case 'mask'
-                instances = run_full_net_useGtMasks(imgs,idsToProcess,anns,objsegs,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
-            case 'loc'
-                instances = run_full_net_useGtLoc(imgs,idsToProcess,anns,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
-            case ''
-                instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath, 'gpu',opts.gpu); 
-            otherwise
-                error(sprintf('options useGt: "%s" is unknown.',opts.useGt));
+        if opts.usesPartialMasks ~= true
+           instances = run_full_net_noPartialMasks(imgs,idsToProcess,'verbose', true, 'masknetPath', opts.masknetPath, 'gpu', opts.gpu); 
+        else
+            switch opts.useGt
+                case 'mask'
+                    instances = run_full_net_useGtMasks(imgs,idsToProcess,anns,objsegs,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
+                case 'loc'
+                    instances = run_full_net_useGtLoc(imgs,idsToProcess,anns,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
+                case ''
+                    instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath, 'gpu',opts.gpu); 
+                otherwise
+                    error('options useGt: "%s" is unknown.',opts.useGt);
+            end
         end
-
         % Aggregate values for computing MAP score
         tic;
         fprintf('aggregating scores...')
