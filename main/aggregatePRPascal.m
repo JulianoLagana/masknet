@@ -53,13 +53,25 @@ function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( 
             gtInstances(iGt).class = ann.objects(iGt).class;
         end
         
+        nPreviousInstances = 0;
+        
         % For each confidence level threshold
         for iConfThreshold = 1 : numel(opts.confidenceLevels)
             
             confThreshold = opts.confidenceLevels(iConfThreshold);
             
             % Select only confident enough instances
-            confidentInstances = currentInstances([currentInstances.score] > confThreshold);
+            confidentInstances = currentInstances([currentInstances.score] >= confThreshold);
+            
+            % If no new instance was added, add the same result from last
+            % iteration (except at the first iteration)
+            nCurrentInstances = numel(confidentInstances);
+            if (nCurrentInstances == nPreviousInstances) && (iConfThreshold ~= 1)
+                truePositives(iConfThreshold, :) = truePositives(iConfThreshold, :) + truePositivesAdded;
+                falsePositives(iConfThreshold, :) = falsePositives(iConfThreshold, :) + falsePositivesAdded;
+                falseNegatives(iConfThreshold, :) = falseNegatives(iConfThreshold, :) + falseNegativesAdded;
+                continue;
+            end
             
             % Plot debug information      
             if opts.debug
@@ -101,7 +113,11 @@ function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( 
                 drawnow;
                 hold off;
             end
-            
+                     
+            % debug
+            oldTruePositives = truePositives(iConfThreshold,:);
+            oldFalsePositives = falsePositives(iConfThreshold,:);
+            oldFalseNegatives = falseNegatives(iConfThreshold,:);
             
             % For each class
             for class = 2 : 21
@@ -119,9 +135,9 @@ function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( 
                 if opts.debug
                     disp(['-------- Analyzing class:' className{1} ' --------']);
                     gtIdxs = 1:numel(classGtInstances);
-                end
+                end              
                 
-                % For each predicted instance
+                % For each predicted instance               
                 for iInst = 1 : numel(classConfidentInstances)                      
                         
                     % Find the ground truth with the highest IoU
@@ -142,7 +158,6 @@ function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( 
                             disp(['Matches with gt no. ' num2str(gtIdxs(idxHighestIoU)) ' - IoU: ' num2str(highestIoU)]);
                         end
                     end
-
 
                     % If IoU good enough, add true positive and remove the matched
                     % ground truth 
@@ -169,11 +184,22 @@ function [ truePositives, falsePositives, falseNegatives ] = aggregatePRPascal( 
                     disp([num2str(numel(classGtInstances)) ' gt were not found. Adding to false negatives']);
                 end
              
-            end
+            end           
+            
             if opts.debug
                 waitforbuttonpress;
                 clc;
             end
+                     
+            % Update number of found instances at the current confidence
+            % level
+            nPreviousInstances = nCurrentInstances;
+            
+            % Save number of added tp, fp and fn's, to avoid redoing this
+            % work
+            truePositivesAdded = truePositives(iConfThreshold,:) - oldTruePositives;
+            falsePositivesAdded = falsePositives(iConfThreshold,:) - oldFalsePositives;
+            falseNegativesAdded = falseNegatives(iConfThreshold,:) - oldFalseNegatives ;
             
         end
         
