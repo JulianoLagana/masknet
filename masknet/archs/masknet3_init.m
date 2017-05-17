@@ -104,7 +104,7 @@ function [ net, batchFn ] = masknet3_init( netOpts, trainOpts )
         load(opts.net.preInitModelPath,'net');
         net = dagnn.DagNN.loadobj(net);
         
-        fprintf('done. \n')
+        fprintf('done. \n');
         
         % Change the size of the fist bilinear grid to match desired batch
         % size
