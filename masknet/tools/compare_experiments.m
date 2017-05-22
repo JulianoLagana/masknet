@@ -31,11 +31,11 @@ function [] = compare_experiments( experimentDirs )
     figure; 
     hold on;
     for i = 1 : nExperiments
-        plot(trainingData{i},'-.','Color',colors(i,:));
+        plot(1-trainingData{i},'-.','Color',colors(i,:));
     end
     legend(expNames);
     for i = 1 : nExperiments
-        plot(validationData{i},'Color',colors(i,:));
+        plot(1-validationData{i},'Color',colors(i,:));
     end
     grid;
     
