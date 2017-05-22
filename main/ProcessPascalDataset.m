@@ -1,28 +1,30 @@
-function ProcessPascalDataset(imgset)
+function ProcessPascalDataset(varargin)
 
     clc; rng(1);
 
-    % Parameters
+    % Default parameters
     opts.savePath = 'data/VOC2012/SegmentationFCN';
     opts.saveSize = [224 224];
-    DEBUG = false;
+    opts.imgset = 'val';
+    opts.generatePerfectPartialMasks = false;
+    opts.DEBUG = false; 
+    
+    % Override default with user-supplied values
+    opts = vl_argparse(opts,varargin);
 
     % Initialize PASCAL VOC devkit functions
     VOCinit;
 
     % Read all image ids in the training and validation Pascal VOC dataset and
     % shuffle it
-    if isempty(imgset)
-        imgset = 'train';
-    end
-    allIds = textread(sprintf(VOCopts.seg.imgsetpath,imgset),'%s');
+    allIds = textread(sprintf(VOCopts.seg.imgsetpath,opts.imgset),'%s');
     allIds = allIds(randperm(numel(allIds)));
 
     % DEBUG
     %allIds = allIds(1:100);
 
     % Create .mat file and matfile object to write dataset
-    filename = ['pascal_imdb_' imgset '.mat'];
+    filename = ['pascal_imdb_' opts.imgset '.mat'];
     delete(filename);
     file = matfile(filename);
 
@@ -38,7 +40,7 @@ function ProcessPascalDataset(imgset)
     nImagesSaved = 0;
 
     nImages = numel(allIds);
-    disp([num2str(nImages) ' images in the ' imgset ' set.']);
+    disp([num2str(nImages) ' images in the ' opts.imgset ' set.']);
 
     % Process batches of images each iteration
     batchSize = 100;
@@ -99,8 +101,10 @@ function ProcessPascalDataset(imgset)
 
         end
         % Segment the images using FCN-8s
-        disp('segmenting...');
-        segFCN = run_fcn_8s(imgs, 'gpu', 1);
+        if ~opts.generatePerfectPartialMasks
+            disp('segmenting...');
+            segFCN = run_fcn_8s(imgs, 'gpu', 1);
+        end
 
         % Find bboxes using Fast-rcnn. Note: Fast-rcnn boxes are 0-based.
         disp('rcnn...');
@@ -136,12 +140,21 @@ function ProcessPascalDataset(imgset)
                 end
 
                 % Generate the partial mask corresponding to the current bbox
-                pMask = generatePartialMask(boxes{i}, j, segFCN{i}, opts.saveSize); 
+                if opts.generatePerfectPartialMasks
+                    pMask = generatePartialMask(boxes{i}, j, clssegs{i}+1, opts.saveSize);
+                else
+                    pMask = generatePartialMask(boxes{i}, j, segFCN{i}, opts.saveSize); 
+                end
 
                 % DEBUG
-                if(DEBUG)
-                    plotDebugInfo(imgs{i},clssegs{i},segFCN{i},boxes{i},gtBoxes{i},patch,pMask,gtMask,j);
+                if opts.DEBUG
+                    if opts.generatePerfectPartialMasks
+                        plotDebugInfo(imgs{i},clssegs{i},clssegs{i}+1,boxes{i},gtBoxes{i},patch,pMask,gtMask,j);
+                    else
+                        plotDebugInfo(imgs{i},clssegs{i},segFCN{i},boxes{i},gtBoxes{i},patch,pMask,gtMask,j);
+                    end
                 end
+
 
                 % Put the masks in the format expected by matconvnet
                 gtMask(gtMask == 0) = -1;
