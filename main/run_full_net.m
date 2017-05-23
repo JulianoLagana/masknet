@@ -8,6 +8,7 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr2e-06_wd0_mom0p9_batch50_maskSize224  224_M224_f200/net-epoch-20';
     opts.initInstances = [];
     opts.gpu = 1;
+    opts.debug = false;
     
     % Override default parameters with user-supplied values
     opts = vl_argparse(opts,varargin);
@@ -91,6 +92,11 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
             mask = gather(net.vars(net.getVarIndex('prediction')).value);
             mask = single(mask > 0);
             
+            % Plot debug info
+            if opts.debug
+                plotDebugInfo(imgs{i}, detections{i}, segFCN{i}, j, patch, pMask, mask);
+            end
+            
             % Resize the mask to the initial bounding box size
             bbox = round(detections{i});                                    
             x = max(bbox(j,1), 1);
@@ -123,40 +129,57 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
 
 end
 
-function plotDebugInfo(image, detections, partSegImage, segMultiImage)
+function plotDebugInfo(image, detections, sseg, j, patch, pMask, mask)
 
-    subplot(2,2,1);
+    % Show original image + bboxes
+    subplot(3,6,[1:3 7:9]);
     imshow(image);
-    plotBboxes(detections);
+    plotBboxes(detections,j);
+    title 'Original image';
+    % add titles, add axis images
     
-    subplot(2,2,2);
-    imshow(createOverlayFromMultiImg(partSegImage)); % Change this to overlay
+    % Show segmentation map + bboxes    
+    subplot(3,6,[4:6 10:12]);
+    imagesc(sseg+1); 
     axis image;
-    plotBboxes(detections);
+    plotBboxes(detections,j);
+    title 'Semantic segmentation + bboxes';
     
-    subplot(2,2,3);
-    imshow(createOverlayFromMultiImg(segMultiImage*0.9)); % Change this to overlay
+    % Show patch
+    subplot(3,6,[13 14]);  
+    imshow(patch);
     axis image;
-    plotBboxes(detections);
+    title 'Patch';
     
-    subplot(2,2,4);
+    % Show partial mask
+    subplot(3,6,[15 16]);
+    imagesc(pMask);
+    axis image;
+    title 'Partial mask';
     
+    % Show generated instance
+    subplot(3,6,[17 18]);
+    imagesc(mask);
+    axis image;
+    title 'Instance';
     
     waitforbuttonpress;
 
 end
 
-function plotBboxes(boxes)
-
-    cat_names = {'background','aeroplane','bicycle','bird','boat','bottle','bus','car','cat', ...
-        'chair','cow','diningtable','dog','horse','motorbike','person','pottedplant', ...
-        'sheep','sofa','train','tvmonitor'};
-    cMap = VOClabelcolormap(256);
+function plotBboxes(boxes, j)
+% Plot all bounding boxes specified in 'boxes', along with their confidence
+% level. The 'j'-th box is plotted in a different color.
     
     for k = 1 : size(boxes,1)
             boxes = double(boxes);
-            rectangle('Position',boxes(k,1:4), 'EdgeColor',cMap(boxes(k,end),:));
-            text(boxes(k,1), boxes(k,2)-5, [cat_names{boxes(k,end)} ' ' num2str(boxes(k,end-1))], 'FontSize', 10, 'Color', 'r');
+            if k ~= j
+                rectangle('Position',boxes(k,1:4), 'EdgeColor','r');
+                text(boxes(k,1), boxes(k,2)-5, num2str(boxes(k,end-1)), 'FontSize', 10, 'Color', 'r');
+            else
+                rectangle('Position',boxes(k,1:4), 'EdgeColor','g');
+                text(boxes(k,1), boxes(k,2)-5, num2str(boxes(k,end-1)), 'FontSize', 10, 'Color', 'g');
+            end            
     end
     
 end
