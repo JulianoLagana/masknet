@@ -14,6 +14,7 @@ function evaluateNetPascal(varargin)
     opts.useGt = '';
     opts.modelName = 'unnamed';
     opts.usesPartialMasks = true;
+    opts.debug = false;
     opts = vl_argparse(opts,varargin);
 
     % Initialize aggregators
@@ -44,18 +45,31 @@ function evaluateNetPascal(varargin)
             imgs{i} = imread(imgpath);
         end
 
-        % If necessary, load the ground truth data
-        if ~isempty(opts.useGt)
-            anns = cell(1,batchSize);
-            objsegs = cell(1,batchSize);
-            for i = 1 : batchSize 
-                annopath = sprintf(VOCopts.annopath,idsToProcess{i});
-                anns{i} = PASreadrecord(annopath);
-                objsegpath = sprintf(VOCopts.seg.instimgpath,idsToProcess{i});
-                objsegs{i} = imread(objsegpath);
-            end
+        % Load the necessary ground truth data       
+        switch opts.useGt
+            case 'mask'
+                anns = cell(1,batchSize);
+                objsegs = cell(1,batchSize);
+                for i = 1 : batchSize 
+                    annopath = sprintf(VOCopts.annopath,idsToProcess{i});
+                    anns{i} = PASreadrecord(annopath);
+                    objsegpath = sprintf(VOCopts.seg.instimgpath,idsToProcess{i});
+                    objsegs{i} = imread(objsegpath);
+                end
+            case 'pmask'
+                clssegs = cell(1,batchSize);
+                for i = 1 : batchSize 
+                    clssegpath = sprintf(VOCopts.seg.clsimgpath,idsToProcess{i});
+                    clssegs{i} = imread(clssegpath);
+                end
+            case 'loc'
+                anns = cell(1,batchSize);
+                for i = 1 : batchSize 
+                    annopath = sprintf(VOCopts.annopath,idsToProcess{i});
+                    anns{i} = PASreadrecord(annopath);
+                end
         end
-
+        
         % Run full net
         if opts.usesPartialMasks ~= true
            instances = run_full_net_noPartialMasks(imgs,idsToProcess,'verbose', true, 'masknetPath', opts.masknetPath, 'gpu', opts.gpu); 
@@ -64,9 +78,11 @@ function evaluateNetPascal(varargin)
                 case 'mask'
                     instances = run_full_net_useGtMasks(imgs,idsToProcess,anns,objsegs,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
                 case 'loc'
-                    instances = run_full_net_useGtLoc(imgs,idsToProcess,anns,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);            
+                    instances = run_full_net_useGtLoc(imgs,idsToProcess,anns,'verbose',true,'masknetPath',opts.masknetPath, 'gpu',opts.gpu);   
+                case 'pmask'
+                    instances = run_full_net_useGtPmasks(imgs,idsToProcess,clssegs,'verbose',true,'masknetPath',opts.masknetPath,'gpu',opts.gpu,'debug',opts.debug);
                 case ''
-                    instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath, 'gpu',opts.gpu); 
+                    instances = run_full_net(imgs, idsToProcess, 'verbose', true, 'masknetPath', opts.masknetPath, 'gpu',opts.gpu, 'debug', opts.debug); 
                 otherwise
                     error('options useGt: "%s" is unknown.',opts.useGt);
             end
