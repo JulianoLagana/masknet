@@ -15,9 +15,16 @@ function [  ] = generate_comparison_merging_strategies(  )
         expDirs{iArch} = [archs{iArch} '/' imdb '/lr' num2str(learning_rates(iArch)) '_wd' num2str(wd(iArch)) '_mom' num2str(momentum(iArch)) '_batch40'];
     end
     expDirs = strrep(expDirs,'.','p');
-    compare_experiments(expDirs);
-
+    
+    % Plot the IoU for the merging strategies
+    compare_experiments(expDirs,'error','IoUerr');
     ylabel IoU
+    xlabel epochs
+    legend 'Merging strategy 1' 'Merging strategy 2' 'Merging strategy 3';
+    
+    % Plot the log loss for the merging strategies
+    compare_experiments(expDirs,'error','objective');
+    ylabel Loss
     xlabel epochs
     legend 'Merging strategy 1' 'Merging strategy 2' 'Merging strategy 3';
 

@@ -1,8 +1,11 @@
-function [] = compare_experiments( experimentDirs )
+function [] = compare_experiments( experimentDirs, varargin )
 
     nExperiments = numel(experimentDirs);
     trainingData = cell(1,nExperiments);
     validationData = cell(1,nExperiments);
+    
+    opts.error = 'IoUerr';
+    opts = vl_argparse(opts,varargin);
     
     % Preppend 'data\experiments\' to all directories
     for i = 1 : nExperiments
@@ -18,8 +21,8 @@ function [] = compare_experiments( experimentDirs )
         
         % Save training and validation data
         load([experimentDir '\net-epoch-' num2str(last) '.mat'], 'stats');
-        trainingData{i} = [stats.train.IoUerr];
-        validationData{i} = [stats.val.IoUerr];
+        trainingData{i} = [stats.train.(opts.error)];
+        validationData{i} = [stats.val.(opts.error)];
 
     end
     
@@ -31,11 +34,19 @@ function [] = compare_experiments( experimentDirs )
     figure; 
     hold on;
     for i = 1 : nExperiments
-        plot(1-trainingData{i},'-.','Color',colors(i,:));
+        if strcmp(opts.error,'IoUerr')
+            plot(1-trainingData{i},'-.','Color',colors(i,:));
+        else
+            plot(trainingData{i},'-.','Color',colors(i,:));
+        end
     end
     legend(expNames);
     for i = 1 : nExperiments
-        plot(1-validationData{i},'Color',colors(i,:));
+        if strcmp(opts.error,'IoUerr')
+            plot(1-validationData{i},'Color',colors(i,:));
+        else
+            plot(validationData{i},'Color',colors(i,:));
+        end            
     end
     grid;
     

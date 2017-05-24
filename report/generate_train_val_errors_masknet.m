@@ -5,10 +5,12 @@ experimentDirs = ...
     'deepmask_dag\VOC2012\pascal_imdb\lr1e-06_wd5e-05_mom0p9_batch40_preInitModelPathdata!experiments!deepmask_dag!COCO_datasets!centered_imdb!lr1e-06_wd5e-05_mom0p9_batch40!net-epoch-3pmat'};   
 
 compare_experiments(experimentDirs);
-
 legend 'Merging strategy 3' 'No partial masks' 'Merging strategy 3 (P)' 'No partial masks (P)';
-grid;
-ylabel 'IoU'
+ylabel 'IoU';
+xlabel 'No. of epochs';
+
+compare_experiments(experimentDirs,'error','objective');
+legend 'Merging strategy 3' 'No partial masks' 'Merging strategy 3 (P)' 'No partial masks (P)';
+ylabel 'Loss'
 xlabel 'No. of epochs'
-grid;
 
