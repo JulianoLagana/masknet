@@ -2,6 +2,8 @@ function [  ] = generate_comparison_merging_strategies(  )
 %GENERATE_COMPARISON_MERGING_STRATEGIES Summary of this function goes here
 %   Detailed explanation goes here
 
+    %% Generate the names for the merging strategies being compared
+    
     archs = {'masknet' 'masknet2' 'masknet3'};
     imdb = 'VOC2012/pascal_imdb';
 
@@ -16,17 +18,41 @@ function [  ] = generate_comparison_merging_strategies(  )
     end
     expDirs = strrep(expDirs,'.','p');
     
-    % Plot the IoU for the merging strategies
+    
+    %% Plot the IoU for the merging strategies
+    
     compare_experiments(expDirs,'error','IoUerr');
     ylabel IoU
     xlabel epochs
-    legend 'Merging strategy 1' 'Merging strategy 2' 'Merging strategy 3';
+    axis([1 20 -Inf Inf]);
     
-    % Plot the log loss for the merging strategies
+    % WORKAROUND - Create three false plots to change legend icons (using the same
+    % colors used in compare_experiments)
+    colors = distinguishable_colors(3,[1 1 1]);
+    for i = 1 : 3
+        fakeplot{i} = plot(NaN,'o');
+        fakeplot{i}.MarkerFaceColor = colors(i,:); fakeplot{i}.MarkerEdgeColor ='none';
+    end
+    legend([fakeplot{1}, fakeplot{2}, fakeplot{3}], 'Merging strategy 1', 'Merging strategy 2', 'Merging strategy 3', ...
+           'Location', 'northwest');
+
+    
+    %% Plot the log loss for the merging strategies
+    
     compare_experiments(expDirs,'error','objective');
     ylabel Loss
     xlabel epochs
-    legend 'Merging strategy 1' 'Merging strategy 2' 'Merging strategy 3';
+    axis([1 20 0.7e4 3.5e4]);
+    
+    % WORKAROUND - Create three false plots to change legend icons (using the same
+    % colors used in compare_experiments)
+    colors = distinguishable_colors(3,[1 1 1]);
+    for i = 1 : 3
+        fakeplot{i} = plot(NaN,'o');
+        fakeplot{i}.MarkerFaceColor = colors(i,:); fakeplot{i}.MarkerEdgeColor ='none';
+    end
+    legend([fakeplot{1}, fakeplot{2}, fakeplot{3}], 'Merging strategy 1', 'Merging strategy 2', 'Merging strategy 3', ...
+        'Location', 'southwest');
 
 end
 
