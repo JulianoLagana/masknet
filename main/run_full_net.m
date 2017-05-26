@@ -40,7 +40,7 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
           detections{iImage}(iBox,3) = detections{iImage}(iBox,3)-detections{iImage}(iBox,1);
           detections{iImage}(iBox,4) = detections{iImage}(iBox,4)-detections{iImage}(iBox,2);
         end
-    detections{iImage}(:,1:4) = detections{iImage}(:,1:4)+1;   
+        detections{iImage}(:,1:4) = detections{iImage}(:,1:4)+1;   
     end    
     
     % Run FCN-8s in all images
