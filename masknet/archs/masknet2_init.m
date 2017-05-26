@@ -73,7 +73,7 @@ function [ net, batchFn ] = masknet2_init( netOpts, trainOpts )
         IoUblock = dagnn.Loss('loss','iouerror');
         net.addLayer('IoUerr', IoUblock, {'prediction','gtMask'},{'IoUerr'});
 
-    % Randomly nitialize all parameters for the new layers
+    % Randomly initialize all parameters for the new layers
     l1 = net.getLayerIndex('convMask');
     l2 = net.getLayerIndex('IoUerr');
     net.initParams(l1:l2);
