@@ -8,6 +8,7 @@ function [ instances ] = run_full_net_noPartialMasks( imgs, imgIds, varargin )
     opts.masknetPath = 'data\experiments\deepmask_dag\VOC2012\pascal_imdb\lr1e-06_wd5e-05_mom0p9_batch40_preInitModelPathdata!experiments!deepmask_dag!COCO_datasets!centered_imdb!lr1e-06_wd5e-05_mom0p9_batch40!net-epoch-3pmat/net-epoch-8.mat';
     opts.initInstances = [];
     opts.gpu = 1;
+    opts.fastrcnnThreshold = 0.1;
     
     % Override default parameters with user-supplied values
     opts = vl_argparse(opts,varargin);
@@ -31,7 +32,7 @@ function [ instances ] = run_full_net_noPartialMasks( imgs, imgIds, varargin )
         tic;
         fprintf('\nrunning fast-rcnn...');
     end    
-    detections = run_fast_rcnn(imgs,props,'confThreshold',0.1,'gpu',opts.gpu);
+    detections = run_fast_rcnn(imgs,props,'confThreshold',opts.fastrcnnThreshold,'gpu',opts.gpu);
 
     % Put detections in MATLAB's bbox convention.
     for iImage = 1 : numel(detections)

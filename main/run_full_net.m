@@ -8,7 +8,8 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
     opts.masknetPath = 'data\experiments\masknet3\VOC2012\pascal_imdb\lr2e-06_wd0_mom0p9_batch50_maskSize224  224_M224_f200/net-epoch-20';
     opts.initInstances = [];
     opts.gpu = 1;
-    opts.debug = false;
+    opts.fastrcnnThreshold = 0.1;
+    opts.debug = false;   
     
     % Override default parameters with user-supplied values
     opts = vl_argparse(opts,varargin);
@@ -32,7 +33,7 @@ function [ instances ] = run_full_net( imgs, imgIds, varargin )
         tic;
         fprintf('\nrunning fast-rcnn...');
     end    
-    detections = run_fast_rcnn(imgs,props,'confThreshold',0.1,'gpu',opts.gpu);
+    detections = run_fast_rcnn(imgs,props,'confThreshold',opts.fastrcnnThreshold,'gpu',opts.gpu);
 
     % Put detections in MATLAB's bbox convention.
     for iImage = 1 : numel(detections)
