@@ -15,6 +15,7 @@ function evaluateNetPascal(varargin)
     opts.modelName = 'unnamed';
     opts.usesPartialMasks = true;
     opts.debug = false;
+    opts.IoUThreshold = 0.5;
     opts = vl_argparse(opts,varargin);
 
     % Initialize aggregators
@@ -90,7 +91,7 @@ function evaluateNetPascal(varargin)
         % Aggregate values for computing MAP score
         tic;
         fprintf('aggregating scores...')
-        [truePositives,falsePositives,falseNegatives] = aggregatePRPascal(instances,truePositives,falsePositives,falseNegatives, 'confidenceLevels',opts.confidenceLevels);    
+        [truePositives,falsePositives,falseNegatives] = aggregatePRPascal(instances,truePositives,falsePositives,falseNegatives, 'confidenceLevels',opts.confidenceLevels, 'IoUThreshold',opts.IoUThreshold);    
         fprintf(' (%.3fs)\n',toc);
 
         batchNumber = batchNumber + 1;
