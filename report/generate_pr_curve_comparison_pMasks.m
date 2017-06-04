@@ -1,4 +1,4 @@
-function [ output_args ] = generate_pr_curve_comparison( input_args )
+function [ ] = generate_pr_curve_comparison_pMasks( )
 
 
     cat_names = {'aeroplane','bicycle','bird','boat','bottle','bus','car','cat', ...
