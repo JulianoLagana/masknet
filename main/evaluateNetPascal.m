@@ -72,8 +72,15 @@ function evaluateNetPascal(varargin)
         end
         
         % Run full net
-        if opts.usesPartialMasks ~= true
-           instances = run_full_net_noPartialMasks(imgs,idsToProcess,'verbose', true, 'masknetPath', opts.masknetPath, 'gpu', opts.gpu); 
+        if opts.usesPartialMasks == false
+            switch opts.useGt
+                case 'loc'
+                    instances = run_full_net_noPartialMasks_useGtLoc(imgs,idsToProcess,anns,'verbose', true, 'masknetPath', opts.masknetPath, 'gpu', opts.gpu); 
+                case ''
+                    instances = run_full_net_noPartialMasks(imgs,idsToProcess,'verbose', true, 'masknetPath', opts.masknetPath, 'gpu', opts.gpu); 
+                otherwise
+                    error('options useGt: "%s" is unknown.',opts.useGt);
+            end
         else
             switch opts.useGt
                 case 'mask'
