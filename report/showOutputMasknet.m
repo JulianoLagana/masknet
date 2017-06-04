@@ -25,7 +25,6 @@ function showOutputMasknet(varargin)
 
     % Choose first 100 validation images
     ids = textread(sprintf(VOCopts.seg.imgsetpath,'val'),'%s');
-    ids = ids(1:100);
     nImages = numel(ids);    
 
     while ~isempty(ids)
@@ -109,6 +108,8 @@ function showOutputMasknet(varargin)
             
         end
 
+        batchNumber = batchNumber + 1;
+        
     end
 
     
