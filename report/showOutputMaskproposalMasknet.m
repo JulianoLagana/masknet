@@ -19,14 +19,13 @@ function showOutputMaskproposalMasknet(varargin)
 
     % Other initializations
     batchNumber = 1;
-    subplot = @(m,n,p) subtightplot (m, n, p, [0 0], [0 0], [0 0]);
+    subplot = @(m,n,p) subtightplot (m, n, p, [0 0.002], [0. 0.], [0. 0.0]);
     masknetInputSize = [224 224];
     mkdir(opts.saveDir);
     figure('visible','off');
 
     % Choose first 100 validation images
     ids = textread(sprintf(VOCopts.seg.imgsetpath,'val'),'%s');
-    ids = ids(1:100);
     nImages = numel(ids);    
 
     while ~isempty(ids)
@@ -189,7 +188,7 @@ function showOutputMaskproposalMasknet(varargin)
 
             subplot(1,3,1);
             imshow(patches{i});
-            axis off;
+            axis normal fill;
             
             subplot(1,3,2);
             imagesc(partialMasks{i});
